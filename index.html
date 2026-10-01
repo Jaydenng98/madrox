@@ -162,6 +162,10 @@ a{color:var(--accent)}
 body{margin:0}
 .upgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
 .upcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.atted{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:10px;border:1px dashed var(--line);border-radius:10px;background:var(--bg)}
+.atted label{display:flex;flex-direction:column;gap:2px;font-size:12px;font-weight:600;color:var(--muted)}
+.atted input{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.atted .note{flex:1 1 100%;margin:0;font-size:12px}
 .upcard.warn{border-color:var(--accent)}
 .rec{display:grid;grid-template-columns:108px 1fr;gap:6px 10px;margin:0;font-size:14px}
 .rec dt{color:var(--muted);font-size:12px;font-weight:600;padding-top:2px}
@@ -769,10 +773,11 @@ body{margin:0}
       if(e&&e.mc){rows+=`<tr><td>${d} ${DOW[dow(d)]}</td><td colspan="4"><b>MC</b> · ${esc(e.reason||'')} ${fileBtn(e.file,'View letter')}</td></tr>`;continue;}
       const attCell=!isWeekday(d)?'<span class="note">weekend</span>':a.admin?'Marked by you':`In ${a.in?hhmm(a.in):'–'} → Out ${a.out?hhmm(a.out):'–'}${a.in&&!a.out?' <span class="note">(no sign-out, not counted)</span>':''} ${fileBtn(a.photo,'Photo')}`;
       rows+=`<tr><td>${d} ${DOW[dow(d)]}</td>
-        <td>${isWeekday(d)?chip(c.qr,c.qr?'✓':'✗')+' ':''}${attCell}${!c.qr&&isWeekday(d)?` <button class="link" data-mark="${d}">Mark attended</button>`:''}</td>
+        <td>${isWeekday(d)?chip(c.qr,c.qr?'✓':'✗')+' ':''}${attCell}${!c.qr&&isWeekday(d)?` <button class="link" data-mark="${d}">Mark attended</button>`:''}${isWeekday(d)?` <button class="link" data-attedit="${d}" data-who="${esc(revWho)}">Edit times</button>`:''}${a.edited?' <span class="note">(edited)</span>':''}</td>
         <td>${v?`${chip(c.video,hhmm(v.at))} ${fileBtn(v.file,'Watch')}`:'–'}</td>
         <td style="white-space:normal">${e?(e.appts||[]).filter(r=>r.client).map(r=>`${esc(r.time||'')} ${esc(r.client)} <span class="note">(${roleTxt(r)}${r.with?', with '+esc(nameOf(r.with)):''})</span>${r.note?' · '+esc(r.note):''}`).join('<br>')||'–':'–'}</td>
         <td>${e?link(e.reel):'–'}</td></tr>`;
+      if(attEdit===revWho+'|'+d) rows+=`<tr><td colspan="5">${attEditor(revWho,d)}</td></tr>`;
     }
     const sales=Object.entries(p.sales||{}).map(([sid,x])=>`<div class="sale${x.cancelled?' x':''}"><span>${x.day} Oct · ${esc(x.note||'Booking')} · <b>${rm(cnt(x))}</b><br><span class="note">${esc(partTxt(x))}${x.with?' · with '+esc(x.with):''} · ${cr(cnt(x)*ownShare(x))}</span></span><span><button class="link" data-cancel="${esc(sid)}" data-val="${x.cancelled?'0':'1'}">${x.cancelled?'Restore':'Mark cancelled'}</button></span></div>`).join('')
       +taggedFor(revWho).map(x=>`<div class="sale${x.cancelled?' x':''}"><span>${x.day} Oct · ${esc(x.note||'Booking')} · <b>${rm(cnt(x))}</b><br><span class="note">${[x.caller===revWho?'Caller':'',x.ads===revWho?'Ads':''].filter(Boolean).join(' + ')} on ${esc(nameOf(x.from))}\u2019s booking · ${cr(cnt(x)*((x.caller===revWho?SHARE.caller:0)+(x.ads===revWho?SHARE.ads:0)))}</span></span><span class="note">${x.cancelled?'cancelled':''}</span></div>`).join('')||'<p class="note" style="margin:0">No bookings.</p>';
@@ -786,6 +791,30 @@ body{margin:0}
       <div class="tbl" style="margin-top:10px"><table><thead><tr><th>Day</th><th>Attendance</th><th>10am video</th><th>Appointments</th><th>Reel</th></tr></thead><tbody>${rows}</tbody></table></div></div>
       ${mcBox}<div class="panel"><h2>YouTube</h2>${yt}</div><div class="panel"><h2>Bookings \u00b7 ${cr(s.sales)}</h2><div class="sales">${sales}</div></div>`;
   }
+
+  // ---------- manual attendance editing (back office) ----------
+  let attEdit='', attDraft={};
+  function attEditor(id,d){
+    const a=(dataOf(id).att||{})[key(d)]||{}, dr=attDraft[id+'|'+d]||{};
+    const vi=dr.in!=null?dr.in:(a.in?hhmm(a.in):''), vo=dr.out!=null?dr.out:(a.out?hhmm(a.out):'');
+    return `<div class="atted"><label>Sign in<input type="time" id="ei" value="${esc(vi)}"></label><label>Sign out<input type="time" id="eo" value="${esc(vo)}"></label>
+      <button class="btn" data-attsave="${d}" data-who="${esc(id)}">Save</button><button class="btn ghost" data-attclear="${d}" data-who="${esc(id)}">Clear day</button><button class="link" data-attcancel="1">Cancel</button>
+      <p class="note">${esc((roster[id]||{}).name||'')} \u00b7 ${DOW[dow(d)]} ${d} Oct. Counts when sign in is 9:45\u201310:00am and sign out is by 11:59pm. To count it anyway, use Mark attended.</p></div>`;
+  }
+  async function attClick(e){
+    const t=e.target, ds=t.dataset||{};
+    if(ds.attedit){ attEdit=ds.who+'|'+ds.attedit; render(); return true; }
+    if(ds.attcancel){ attEdit=''; render(); return true; }
+    if(ds.attsave||ds.attclear){ const id=ds.who, d=+(ds.attsave||ds.attclear), clear=!!ds.attclear;
+      const vin=clear?'':($('ei')||{}).value||'', vout=clear?'':($('eo')||{}).value||'';
+      if(!clear&&!vin){flash('Enter a sign-in time, or tap Clear day.');return true;}
+      t.textContent='Saving\u2026';
+      try{ allStates[id]=await rpc('admin_att',{p_id:id,p_day:d,p_in:vin,p_out:vout}); delete attDraft[id+'|'+d]; attEdit=''; flash(clear?'Attendance cleared':'Attendance saved'); render(); }
+      catch(err){ flash(errText(err)); render(); }
+      return true; }
+    return false;
+  }
+  document.addEventListener('input',e=>{ if((e.target.id==='ei'||e.target.id==='eo')&&attEdit){ const dr=attDraft[attEdit]=attDraft[attEdit]||{}; dr[e.target.id==='ei'?'in':'out']=e.target.value; } });
 
   let upDay=1, upArea='All', upStat='all';
   const who=id=>{const r=roster[id]||{};return `${esc(r.area||'')} · Team ${esc(r.team||'')} · ${esc(r.group||'')}’s group`};
@@ -815,12 +844,12 @@ body{margin:0}
         +taggedFor(id).filter(x=>x.day===upDay).map(x=>`<div${x.cancelled?' style="text-decoration:line-through;opacity:.6"':''}><span class="xs">${[x.caller===id?'Caller':'',x.ads===id?'Ads':''].filter(Boolean).join(' + ')} on ${esc(nameOf(x.from))}\u2019s booking:</span> ${cnt(x)} \u00d7 ${esc(x.note||'Booking')}</div>`).join('')||'<span class="note">none</span>';
       const head=`<div class="row" style="justify-content:space-between"><b>${esc(r.name)}</b>${s==='mc'?chip(null,'MC'):s==='wknd'?chip(null,'Weekend'):s==='ok'?chip(true,'✓ Present'):s==='noout'?chip(false,'No sign-out'):s==='late'?chip(false,'Not counted'):chip(false,'Not signed in')}</div><div class="note">${who(id)}</div>`;
       if(s==='mc') return `<div class="upcard">${head}<dl class="rec"><dt>MC reason</dt><dd>${esc(e.reason||'')}</dd><dt>Letter</dt><dd>${e.file?fileBtn(e.file,'View letter'):'<span class="note">sent separately</span>'}</dd><dt>Bookings</dt><dd>${bks}</dd></dl></div>`;
-      const attIn=a.admin?'<span class="ok">Marked attended by you</span>':a.in?`${hhmm(a.in)} ${fileBtn(a.photo,'Photo')}`:'<span class="note">–</span>';
+      const attIn=a.admin?'<span class="ok">Marked attended by you</span>':a.in?`${hhmm(a.in)}${a.edited?' <span class="xs">(edited by you)</span>':''} ${fileBtn(a.photo,'Photo')}`:'<span class="note">–</span>';
       const attOut=a.admin?'':a.out?hhmm(a.out)+(s==='ok'?' <span class="ok">✓ counted</span>':' <span class="bad">not counted</span>'):a.in?'<span class="bad">Not signed out – no marks</span>':'<span class="note">–</span>';
       const vidTxt=v?`${hhmm(v.at)} ${c.video?'<span class="ok">✓</span>':'<span class="bad">outside 9–10am</span>'} ${fileBtn(v.file,'Watch')}`:'<span class="note">–</span>';
       const ap=e?(e.appts||[]).filter(x=>x&&String(x.client||'').trim()):[];
       const apTxt=ap.length?ap.map((x,i)=>`<div>${i+1}. ${x.time?esc(x.time)+' · ':''}<b>${esc(x.client)}</b>${x.note?' · '+esc(x.note):''} <span class="xs">${roleTxt(x)}${x.with?', with '+esc(nameOf(x.with)):''}</span></div>`).join('')+(e.at?`<span class="xs">sent ${hhmm(e.at)}</span>`:''):'<span class="note">not submitted</span>';
-      const mark=!c.qr&&wd?`<button class="link" data-mark="${upDay}" data-who="${esc(id)}">Mark attended</button>`:'';
+      const mark=wd?(attEdit===id+'|'+upDay?attEditor(id,upDay):`<div class="row" style="gap:14px">${!c.qr?`<button class="link" data-mark="${upDay}" data-who="${esc(id)}">Mark attended</button>`:''}<button class="link" data-attedit="${upDay}" data-who="${esc(id)}">Edit times</button></div>`):'';
       return `<div class="upcard${s==='noout'?' warn':''}">${head}
         <dl class="rec">
           ${!wd?'<dt>Office</dt><dd><span class="note">weekend</span></dd>':`<dt>Sign in</dt><dd>${attIn}</dd>
@@ -975,6 +1004,7 @@ body{margin:0}
   $('upRefresh').addEventListener('click',async()=>{ flash('Refreshing\u2026',true); await loadAdmin(); flash('Up to date'); });
   $('upCsv').addEventListener('click',downloadAll);
   async function adminClick(e){
+    if(await attClick(e)) return;
     const f=e.target.dataset.file; if(f){ openFile(f,e.target); return; }
     const id=e.target.dataset.who, d=e.target.dataset.mark, c=e.target.dataset.cancel; if(!id) return;
     try{
@@ -988,6 +1018,7 @@ body{margin:0}
     if(e.target.dataset.sure!=='1'){e.target.dataset.sure='1';e.target.textContent='Tap again to reset';return;}
     e.target.textContent='Resetting\u2026'; try{await rpc('admin_reset_device',{p_id:id}); phones[id]=false; render(); flash(roster[id].name+' can now log in on a new phone.');}catch(err){e.target.textContent='Could not reset';}});
   $('revBody').addEventListener('click',async e=>{
+    if(await attClick(e)) return;
     const f=e.target.dataset.file; if(f){ openFile(f,e.target); return; }
     const d=e.target.dataset.mark, c=e.target.dataset.cancel;
     try{
