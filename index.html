@@ -537,11 +537,12 @@ body{margin:0}
   // run an agent action on the server (or locally in practice)
   async function act(action,data,practicePatch,okMsg){
     if(practice){ pData[pMe]=mergeDeep(clone(pData[pMe]),practicePatch); flash((okMsg||'Saved')+' (practice only)'); render(); return true; }
-    if(!online()){showOffline();flash('No internet. Connect to Wi-Fi or mobile data first.');return false;}
-    if(busy) return false; busy=true; flash('Saving…',true); render();
+    if(!online()){showOffline();lastActErr='No internet. Connect to Wi-Fi or mobile data first.';flash(lastActErr);return false;}
+    if(busy){ lastActErr='Still saving, wait a second.'; return false; } busy=true; flash('Saving…',true); render();
     try{ const r=await rpc('agent_act',{p_id:me.id,p_pin:me.pin,p_device:DEVICE,p_action:action,p_data:data||{}}); myState=r.state; if(r.credits) myCredits=r.credits; setClock(r.clock); flash(okMsg||'Saved'); busy=false; draft=null; ui={}; render(); return true; }
-    catch(e){ busy=false; flash(errText(e)); render(); return false; }
+    catch(e){ busy=false; lastActErr=errText(e); flash(lastActErr); render(); return false; }
   }
+  let lastActErr='';
   async function upload(kind,blob,ext){
     if(practice) return 'practice/'+kind;
     const path=`${me.id}/${key(today())}-${kind}-${Date.now().toString(36)}.${ext}`;
@@ -670,10 +671,11 @@ body{margin:0}
           <div class="apptbox"><div class="appt"><input type="time" id="at-0" data-a="0" data-f="time" value="${esc(r.time)}" aria-label="Appointment ${n} time"><input type="text" id="ac-0" data-a="0" data-f="client" value="${esc(r.client)}" placeholder="Client name" aria-label="Appointment ${n} client"><input type="text" id="an-0" data-a="0" data-f="note" value="${esc(r.note)}" placeholder="Unit / project / purpose" aria-label="Appointment ${n} details"></div>
             <div class="appt2"><select id="ar-0" data-a="0" data-f="role" aria-label="My part">${Object.entries(ROLE).map(([k,v])=>`<option value="${k}"${r.role===k?' selected':''}>My part: ${v.l} (${nfmt(v.u)})</option>`).join('')}</select><select id="aw-0" data-a="0" data-f="with" aria-label="With whom"><option value="">${r.role==='both'?'With: no one':'With whom? (optional)'}</option>${others.map(x=>`<option value="${esc(x)}"${r.with===x?' selected':''}>With: ${esc(roster[x].name)}</option>`).join('')}<option value="other"${r.with==='other'?' selected':''}>With: someone outside MADROX</option></select></div></div>
           <p class="note" style="margin:6px 0 0">Your part: <b>Setter</b> = 0.5, <b>Attendee</b> = 0.5, <b>Set &amp; met</b> = 1. 2 count per day.</p>
-          ${ui.apConfirm?`<div class="confirm"><span>Submit appointment ${n} (${esc(r.client.trim())})? <b>You can’t change it after.</b></span><div class="row"><button class="btn" id="apYes" ${dis}>Yes, submit</button><button class="btn ghost" id="apNo">Go back</button></div></div>`
-            :`<button class="btn" id="apGo" style="margin-top:10px">Submit appointment ${n}</button>`}`;
+          <button class="btn big" id="apYes" style="margin-top:10px" ${dis}>Submit appointment ${n}</button>
+          <p class="note" style="margin:4px 0 0">Saved straight away. You can\u2019t change it after.</p>`;
         } else if(!ap.length) body+='<p class="note" style="margin:0">No appointments this day.</p>';
         if(live&&!beforeTen&&!e) body+=`<button class="link" id="mcOpen" style="margin-top:10px;display:block" ${mcUsed>=MAX_MC?'disabled':''}>${mcUsed>=MAX_MC?'All 3 MC days used':'On MC today?'}</button>`;
+        if(ui.apMsg) body=`<div class="banner" style="margin:0 0 8px;${ui.apMsg.ok?'background:var(--good-soft);color:var(--good)':''}">${esc(ui.apMsg.text)}</div>`+body;
         html+=card('3 · Appointments',chip(counted>=2?true:(live?null:false),`${nfmt(counted)}/2 counted`),body);
         // reel
         if(!wd) html+=card('4 · Reel link',chip(null,'Weekend'),'<p class="note" style="margin:0">No reel needed on Saturday and Sunday.</p>');
@@ -681,8 +683,8 @@ body{margin:0}
         else if(live&&beforeTen) html+=card('4 · Reel link',chip(null,'Opens 10am'),'<p class="note" style="margin:0">The reel link opens at 10:00am.</p>');
         else if(live) html+=card('4 · Reel link',chip(null,'Not yet'),`<input type="url" id="reelUrl" placeholder="https://www.instagram.com/reel/…" value="${esc(D.reel)}">
           <p class="note" style="margin:4px 0 0">Monday to Friday. No link, no reel mark for today.</p>
-          ${ui.rlConfirm?`<div class="confirm"><span>Submit today’s reel link? <b>You can’t change it after.</b></span><div class="row"><button class="btn" id="rlYes" ${dis}>Yes, submit</button><button class="btn ghost" id="rlNo">Go back</button></div></div>`
-            :`<button class="btn" id="rlGo" style="margin-top:10px">Submit reel link</button>`}`);
+          ${ui.rlMsg?`<div class="banner" style="margin:8px 0 0">${esc(ui.rlMsg.text)}</div>`:''}
+          <button class="btn" id="rlYes" style="margin-top:10px" ${dis}>Submit reel link</button>`);
         else html+=card('4 · Reel link',chip(false,'Missed'),'<p class="note" style="margin:0">No reel link this day.</p>');
       }
     }
@@ -997,7 +999,7 @@ body{margin:0}
   const dv=$('dayView');
   dv.addEventListener('input',e=>{
     if(!draft) return; const t=e.target;
-    if(t.dataset.a!==undefined){draft.appts[+t.dataset.a][t.dataset.f]=t.value; const u=draft.appts.filter(r=>r.client.trim()).reduce((s,r)=>s+unitOf(r),0); const l=$('apptLabel'); if(l) l.textContent=apptLabel(u); ui.repConfirm=false; ui.apConfirm=false; if(t.dataset.f==='role'){ const w=$('aw-'+t.dataset.a); if(w&&w.options[0]) w.options[0].textContent=t.value==='both'?'With: no one':'With whom? (optional)'; }}
+    if(t.dataset.a!==undefined){draft.appts[+t.dataset.a][t.dataset.f]=t.value; const u=draft.appts.filter(r=>r.client.trim()).reduce((s,r)=>s+unitOf(r),0); const l=$('apptLabel'); if(l) l.textContent=apptLabel(u); ui.repConfirm=false; ui.apConfirm=false; if(ui.apMsg&&!ui.apMsg.ok) ui.apMsg=null; if(t.dataset.f==='role'){ const w=$('aw-'+t.dataset.a); if(w&&w.options[0]) w.options[0].textContent=t.value==='both'?'With: no one':'With whom? (optional)'; }}
     if(t.id==='reelUrl'){draft.reel=t.value;ui.repConfirm=false;ui.rlConfirm=false;}
     if(t.id==='mcReason') draft.mcReason=t.value;
   });
@@ -1024,13 +1026,23 @@ body{margin:0}
     if(id==='apptAdd'){ if(draft.appts.length<6) draft.appts.push({time:'',client:'',note:'',role:'both',with:''}); renderDayView(); return; }
     if(id==='apGo'){ if(!draft.appts[0].client.trim()){flash('Write the client name first.');return;} ui.apConfirm=true; renderDayView(); return; }
     if(id==='apNo'){ ui.apConfirm=false; renderDayView(); return; }
-    if(id==='apYes'){ if(guard()) return; const r=draft.appts[0], k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
+    if(id==='apYes'){ const r=draft.appts[0];
+      if(!String(r.client||'').trim()){ ui.apMsg={ok:false,text:'Write the client name first.'}; renderDayView(); return; }
+      if(day!==today()){ ui.apMsg={ok:false,text:'You can only add appointments for today.'}; renderDayView(); return; }
+      if(!openFor('main')){ ui.apMsg={ok:false,text:'Appointments are open from 10:00am to 9:00pm.'}; renderDayView(); return; }
+      const k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
       const item={time:r.time,client:r.client.trim(),note:r.note.trim(),role:r.role||'both',with:r.with||''}, n=(cur.appts||[]).length+1;
-      act('appt',item,{days:{[k]:{appts:[...(cur.appts||[]),{...item,at:now()}],reel:cur.reel||'',at:cur.at||now()}}},`Appointment ${n} submitted`); return; }
+      const ok=await act('appt',item,{days:{[k]:{appts:[...(cur.appts||[]),{...item,at:now()}],reel:cur.reel||'',at:cur.at||now()}}},`Appointment ${n} saved`);
+      ui.apMsg=ok?{ok:true,text:`\u2713 Appointment ${n} saved`}:{ok:false,text:'Not saved: '+lastActErr+' Please try again or tell Alicia.'};
+      renderDayView(); return; }
     if(id==='rlGo'){ if(!isUrl(draft.reel)){flash('Paste the full reel link, starting with https://');return;} ui.rlConfirm=true; renderDayView(); return; }
     if(id==='rlNo'){ ui.rlConfirm=false; renderDayView(); return; }
-    if(id==='rlYes'){ if(guard()) return; const reel=draft.reel.trim(), k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
-      act('reel',{reel},{days:{[k]:{appts:cur.appts||[],reel,reelAt:now(),at:cur.at||now()}}},'Reel link submitted'); return; }
+    if(id==='rlYes'){ const reel=String(draft.reel||'').trim();
+      if(!isUrl(reel)){ ui.rlMsg={text:'Paste the full reel link, starting with https://'}; renderDayView(); return; }
+      if(day!==today()||!openFor('main')){ ui.rlMsg={text:'The reel link is open from 10:00am to 9:00pm today.'}; renderDayView(); return; }
+      const k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
+      const ok=await act('reel',{reel},{days:{[k]:{appts:cur.appts||[],reel,reelAt:now(),at:cur.at||now()}}},'Reel link saved');
+      if(!ok){ ui.rlMsg={text:'Not saved: '+lastActErr}; renderDayView(); } return; }
     if(id==='repNo'){ ui.repConfirm=false; renderDayView(); return; }
     if(id==='repYes'){ if(guard()) return; const appts=draft.appts.filter(r=>r.client.trim()).map(r=>({time:r.time,client:r.client.trim(),note:r.note.trim(),role:r.role||'both',with:r.with||''}));
       const reel=isWeekday(day)&&isUrl(draft.reel)?draft.reel.trim():''; act('report',{appts,reel},{days:{[key(day)]:{appts,reel,at:now()}}},'Daily report submitted'); return; }
@@ -1134,7 +1146,7 @@ body{margin:0}
   });
 
   // refresh clock/day every 30s; refresh back office every 60s
-  let lastT=today(); setInterval(()=>{const t=today(); if(t!==lastT){lastT=t; if(!practice){day=Math.min(DAYS,Math.max(1,t)); draft=null; ui={};} } if(!recEdit&&!attEdit) render();},30000);
+  let lastT=today(); setInterval(()=>{const t=today(); if(t!==lastT){lastT=t; if(!practice){day=Math.min(DAYS,Math.max(1,t)); draft=null; ui={};} } const ae=document.activeElement; const typing=ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName); if(!recEdit&&!attEdit&&!typing) render();},30000);
   setInterval(()=>{ if(isAdmin&&!practice&&!recEdit&&!attEdit) loadAdmin(); },60000);
 
   // ---------- start ----------
