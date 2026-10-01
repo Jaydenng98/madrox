@@ -271,7 +271,7 @@ body{margin:0}
       <div class="row" id="upFilter"></div>
       <div class="row" id="upStatus"></div>
       <div id="upSum" class="upsum"></div>
-      <p class="note" style="margin:0">Everything each agent entered for the day: sign in and sign out, learning video, appointments, reel, YouTube and bookings. Attendance (Monday to Friday) only counts when the agent signed in between 10am and 6pm <b>and</b> signed out by 11:59pm. A sign-in with no sign-out is shown here but gets no marks.</p>
+      <p class="note" style="margin:0">Everything each agent entered for the day: sign in and sign out, learning video, appointments, reel, YouTube and bookings. Attendance (Monday to Friday) only counts when the agent signed in between 9:45am and 10:00am <b>and</b> signed out by 11:59pm. A sign-in with no sign-out is shown here but gets no marks.</p>
       <div class="row"><button class="btn ghost" id="upRefresh">↻ Refresh</button><button class="btn ghost" id="upCsv">⬇ Download everything (Excel)</button></div>
     </div>
     <div id="upBody" class="upgrid"></div>
@@ -313,7 +313,7 @@ body{margin:0}
     <div class="panel">
       <h2>App link for agents</h2>
       <div class="row"><code id="appLink" style="font-size:13px;word-break:break-all"></code><button class="btn ghost" id="copyLink">Copy link</button></div>
-      <p class="note" style="margin:8px 0 0">Office presence: Monday to Friday only. Agents sign in 10:00am–6:00pm and sign out any time before 11:59pm. Post the group photo in the group chat, then tick Sign in.</p>
+      <p class="note" style="margin:8px 0 0">Office presence: Monday to Friday only. Agents sign in 9:45am–10:00am and sign out any time before 11:59pm. Post the group photo in the group chat, then tick Sign in.</p>
     </div>
     <div class="panel">
       <h2>How marks work</h2>
@@ -323,7 +323,7 @@ body{margin:0}
           <ul>
             <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
             <li>Check-in is open 9am–9pm: learning video 9–10am, everything else from 10am.</li>
-            <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in (10am–6pm). Tap Sign out any time before 11:59pm. Both are needed.</li>
+            <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
             <li>Appointments: 2 a day with client names, every day (target 62). Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
             <li>Reels: 1 a day with the link, Monday to Friday only, 22 days</li>
             <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
@@ -372,7 +372,7 @@ body{margin:0}
           <ul>
             <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
             <li>Check-in is open 9am–9pm: learning video 9–10am, everything else from 10am.</li>
-            <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in (10am–6pm). Tap Sign out any time before 11:59pm. Both are needed.</li>
+            <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
             <li>Appointments: 2 a day with client names, every day (target 62). Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
             <li>Reels: 1 a day with the link, Monday to Friday only, 22 days</li>
             <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
@@ -417,7 +417,7 @@ body{margin:0}
   // ======================
 
   const APP_URL=location.origin+location.pathname+'#attend';
-  const YEAR=2026, MONTH=9, DAYS=31, VID_FROM=9*60, VID_TO=10*60, ATT_FROM=10*60, ATT_TO=18*60+1, OUT_TO=24*60, OPEN_AT=10*60, CLOSE_AT=21*60, MAX_MC=3;
+  const YEAR=2026, MONTH=9, DAYS=31, VID_FROM=9*60, VID_TO=10*60, ATT_FROM=9*60+45, ATT_TO=10*60+1, OUT_TO=24*60, OPEN_AT=10*60, CLOSE_AT=21*60, MAX_MC=3;
   const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const dow=d=>new Date(YEAR,MONTH,d).getDay();
   const isWeekday=d=>{const w=dow(d);return w>0&&w<6};
@@ -616,10 +616,10 @@ body{margin:0}
     else {
       const canAtt=live&&openFor('att'), canOut=day===t&&openFor('out'), afterSix=day===t&&!tst&&m>=ATT_TO;
       const inOk=a.in&&inR(a.in,ATT_FROM,ATT_TO), outOk=a.out&&dayKL(a.out)===day&&inR(a.out,ATT_FROM,OUT_TO);
-      att+=`<div class="task"><div><b>Sign in</b><small>Between 10:00am and 6:00pm. Post the group photo in the group chat first.</small></div>${a.in?chip(inOk,'\u2713 '+hhmm(a.in)):''}</div>`;
+      att+=`<div class="task"><div><b>Sign in</b><small>Between 9:45am and 10:00am. Post the group photo in the group chat first.</small></div>${a.in?chip(inOk,'\u2713 '+hhmm(a.in)):''}</div>`;
       if(!a.in&&canAtt){
         att+=`<button class="btn" id="signIn" ${busy?'disabled':''}>\u2713 Sign in now</button>`;
-      } else if(!a.in) att+=`<p class="note" style="margin:0">${beforeTen?'Sign-in opens at 10:00am.':afterSix?'Sign-in closed at 6:00pm.':'No sign-in this day.'}</p>`;
+      } else if(!a.in) att+=`<p class="note" style="margin:0">${day===t&&!tst&&m<ATT_FROM?'Sign-in opens at 9:45am.':afterSix?'Sign-in closed at 10:00am, so no attendance mark today.':'No sign-in this day.'}</p>`;
       att+=`<div class="task"><div><b>Sign out</b><small>After signing in, any time until 11:59pm</small></div>${a.out?chip(outOk,'\u2713 '+hhmm(a.out)):''}</div>`;
       if(a.in&&!a.out){
         att+= canOut?`<button class="btn" id="signOut" ${dis}>Sign out now</button>`:`<p class="note" style="margin:0">${day<t?'Not signed out by 11:59pm, so this day\u2019s attendance doesn\u2019t count.':''}</p>`;
@@ -904,7 +904,7 @@ body{margin:0}
     if(t.id==='reelUrl'){draft.reel=t.value;ui.repConfirm=false;}
     if(t.id==='mcReason') draft.mcReason=t.value;
   });
-  const MSG={video:'The learning video can only be uploaded between 9:00am and 10:00am.',att:'Sign in is open from 10:00am to 6:00pm, Monday to Friday.',out:'Sign out is open from 10:00am to 11:59pm.',main:'This is open from 10:00am to 9:00pm.'};
+  const MSG={video:'The learning video can only be uploaded between 9:00am and 10:00am.',att:'Sign in is open from 9:45am to 10:00am, Monday to Friday.',out:'Sign out is open until 11:59pm.',main:'This is open from 10:00am to 9:00pm.'};
   const guard=(k='main')=>{ if(day!==today()){ui={};render();flash('Check in on today instead.');return true;} if(!openFor(k)){ui={};render();flash(MSG[k]);return true;} return false; };
   const guardOld=()=>{ if(day!==today()){ui={};render();flash('Check in on today instead.');return true;} if(!inWindow()){ui={};render();flash('This is open from 10:00am to 9:00pm.');return true;} return false; };
   dv.addEventListener('change',async e=>{
