@@ -165,6 +165,13 @@ body{margin:0}
 .atted{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:10px;border:1px dashed var(--line);border-radius:10px;background:var(--bg)}
 .atted label{display:flex;flex-direction:column;gap:2px;font-size:12px;font-weight:600;color:var(--muted)}
 .atted input{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.edsec{display:grid;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+.edsec:first-of-type{border-top:0}
+.edsec h4{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+.edrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.edrow input,.edrow select{font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.edrow input[type=text],.edrow input[type=url]{flex:1 1 140px}
+.edpanel{display:grid;gap:4px;padding:12px;border:2px solid var(--accent);border-radius:12px;background:var(--bg)}
 .atted .note{flex:1 1 100%;margin:0;font-size:12px}
 .upcard.warn{border-color:var(--accent)}
 .rec{display:grid;grid-template-columns:108px 1fr;gap:6px 10px;margin:0;font-size:14px}
@@ -775,14 +782,15 @@ body{margin:0}
     let rows='';
     for(let d=1;d<=last;d++){
       const k=key(d), e=(p.days||{})[k], a=(p.att||{})[k]||{}, v=(p.vid||{})[k], c=dayChecks(p,d);
-      if(e&&e.mc){rows+=`<tr><td>${d} ${DOW[dow(d)]}</td><td colspan="4"><b>MC</b> · ${esc(e.reason||'')} ${fileBtn(e.file,'View letter')}</td></tr>`;continue;}
+      if(e&&e.mc){rows+=`<tr><td>${d} ${DOW[dow(d)]}</td><td colspan="4"><b>MC</b> · ${esc(e.reason||'')} ${fileBtn(e.file,'View letter')} <button class="link" data-edopen="${d}" data-who="${esc(revWho)}">Edit day</button></td></tr>`; if(recEdit===revWho+'|'+d) rows+=`<tr><td colspan="5" style="white-space:normal">${recEditor(revWho,d)}</td></tr>`; continue;}
       const attCell=!isWeekday(d)?'<span class="note">weekend</span>':a.admin?'Marked by you':`In ${a.in?hhmm(a.in):'–'} → Out ${a.out?hhmm(a.out):'–'}${a.in&&!a.out?' <span class="note">(no sign-out, not counted)</span>':''} ${fileBtn(a.photo,'Photo')}`;
       rows+=`<tr><td>${d} ${DOW[dow(d)]}</td>
-        <td>${isWeekday(d)?chip(c.qr,c.qr?'✓':'✗')+' ':''}${attCell}${!c.qr&&isWeekday(d)?` <button class="link" data-mark="${d}">Mark attended</button>`:''}${isWeekday(d)?` <button class="link" data-attedit="${d}" data-who="${esc(revWho)}">Edit times</button>`:''}${a.edited?' <span class="note">(edited)</span>':''}</td>
+        <td>${isWeekday(d)?chip(c.qr,c.qr?'✓':'✗')+' ':''}${attCell}${!c.qr&&isWeekday(d)?` <button class="link" data-mark="${d}">Mark attended</button>`:''}${isWeekday(d)?` <button class="link" data-attedit="${d}" data-who="${esc(revWho)}">Edit times</button>`:''} <button class="link" data-edopen="${d}" data-who="${esc(revWho)}">Edit day</button>${a.edited?' <span class="note">(edited)</span>':''}</td>
         <td>${v?`${chip(c.video,hhmm(v.at))} ${fileBtn(v.file,'Watch')}`:'–'}</td>
         <td style="white-space:normal">${e?(e.appts||[]).filter(r=>r.client).map(r=>`${esc(r.time||'')} ${esc(r.client)} <span class="note">(${roleTxt(r)}${r.with?', with '+esc(nameOf(r.with)):''})</span>${r.note?' · '+esc(r.note):''}`).join('<br>')||'–':'–'}</td>
         <td>${e?link(e.reel):'–'}</td></tr>`;
       if(attEdit===revWho+'|'+d) rows+=`<tr><td colspan="5">${attEditor(revWho,d)}</td></tr>`;
+      if(recEdit===revWho+'|'+d) rows+=`<tr><td colspan="5" style="white-space:normal">${recEditor(revWho,d)}</td></tr>`;
     }
     const sales=Object.entries(p.sales||{}).map(([sid,x])=>`<div class="sale${x.cancelled?' x':''}"><span>${x.day} Oct · ${esc(x.note||'Booking')} · <b>${rm(cnt(x))}</b><br><span class="note">${esc(partTxt(x))}${x.with?' · with '+esc(x.with):''} · ${cr(cnt(x)*ownShare(x))}</span></span><span><button class="link" data-cancel="${esc(sid)}" data-val="${x.cancelled?'0':'1'}">${x.cancelled?'Restore':'Mark cancelled'}</button></span></div>`).join('')
       +taggedFor(revWho).map(x=>`<div class="sale${x.cancelled?' x':''}"><span>${x.day} Oct · ${esc(x.note||'Booking')} · <b>${rm(cnt(x))}</b><br><span class="note">${[x.caller===revWho?'Caller':'',x.ads===revWho?'Ads':''].filter(Boolean).join(' + ')} on ${esc(nameOf(x.from))}\u2019s booking · ${cr(cnt(x)*((x.caller===revWho?SHARE.caller:0)+(x.ads===revWho?SHARE.ads:0)))}</span></span><span class="note">${x.cancelled?'cancelled':''}</span></div>`).join('')||'<p class="note" style="margin:0">No bookings.</p>';
@@ -806,7 +814,61 @@ body{margin:0}
       <button class="btn" data-attsave="${d}" data-who="${esc(id)}">Save</button><button class="btn ghost" data-attclear="${d}" data-who="${esc(id)}">Clear day</button><button class="link" data-attcancel="1">Cancel</button>
       <p class="note">${esc((roster[id]||{}).name||'')} \u00b7 ${DOW[dow(d)]} ${d} Oct. Counts when sign in is 9:45\u201310:00am and sign out is by 11:59pm. To count it anyway, use Mark attended.</p></div>`;
   }
+  // full day editor
+  let recEdit='', edDraft={}, edAppts=[];
+  const edV=(f,def)=>edDraft[f]!=null?edDraft[f]:def;
+  function openRecEdit(id,d){ recEdit=id+'|'+d; edDraft={}; const e=(dataOf(id).days||{})[key(d)]||{}; edAppts=JSON.parse(JSON.stringify((e.appts||[]).filter(r=>r&&r.client))); attEdit=''; render(); }
+  function recEditor(id,d){
+    const p=dataOf(id), k=key(d), a=(p.att||{})[k]||{}, v=(p.vid||{})[k], e=(p.days||{})[k]||{}, wd=isWeekday(d), wk=weekOf(d), y=wk?(p.yt||{})['w'+wk]:null, mc=!!e.mc;
+    const others=Object.keys(roster).filter(x=>x!==id).sort((x,y)=>roster[x].name.localeCompare(roster[y].name));
+    const btn=(what,label)=>`<button class="btn" data-ed="${what}" data-who="${esc(id)}" data-day="${d}">${label}</button>`;
+    let h=`<div class="edpanel"><div class="row" style="justify-content:space-between"><b>Edit ${esc((roster[id]||{}).name||'')} \u00b7 ${DOW[dow(d)]} ${d} Oct</b><button class="link" data-edclose="1">Close</button></div>`;
+    if(wd&&!mc) h+=`<div class="edsec"><h4>Sign in / sign out</h4><div class="edrow"><input type="time" id="ed-in" value="${esc(edV('ed-in',a.in?hhmm(a.in):''))}" aria-label="Sign in"><input type="time" id="ed-out" value="${esc(edV('ed-out',a.out?hhmm(a.out):''))}" aria-label="Sign out">${btn('att','Save')}</div><span class="xs">Empty sign-in = clear the day. Counts when sign in is 9:45\u201310:00am and sign out by 11:59pm.</span></div>`;
+    if(!mc) h+=`<div class="edsec"><h4>Learning video</h4><div class="edrow"><input type="time" id="ed-vid" value="${esc(edV('ed-vid',v&&v.at?hhmm(v.at):''))}" aria-label="Video time">${btn('video','Save')}</div><span class="xs">Empty = clear. Counts when the time is 9:00\u201310:00am.</span></div>`;
+    if(!mc) h+=`<div class="edsec"><h4>Appointments</h4>${edAppts.map((r,i)=>`<div class="edrow"><input type="time" data-ei="${i}" data-ef="time" value="${esc(r.time||'')}" aria-label="Time"><input type="text" data-ei="${i}" data-ef="client" value="${esc(r.client||'')}" placeholder="Client"><input type="text" data-ei="${i}" data-ef="note" value="${esc(r.note||'')}" placeholder="Details"><select data-ei="${i}" data-ef="role">${Object.entries(ROLE).map(([kk,vv])=>`<option value="${kk}"${(r.role||'both')===kk?' selected':''}>${vv.l} (${nfmt(vv.u)})</option>`).join('')}</select><select data-ei="${i}" data-ef="with"><option value="">With: no one</option>${others.map(x=>`<option value="${esc(x)}"${r.with===x?' selected':''}>${esc(roster[x].name)}</option>`).join('')}<option value="other"${r.with==='other'?' selected':''}>Outside MADROX</option></select><button class="link" data-edrm="${i}">Remove</button></div>`).join('')||'<span class="xs">No appointments.</span>'}
+      <div class="edrow">${edAppts.length<6?'<button class="btn ghost" data-edaddappt="1">+ Add appointment</button>':''}${btn('appts','Save appointments')}</div></div>`;
+    if(wd&&!mc) h+=`<div class="edsec"><h4>Reel link</h4><div class="edrow"><input type="url" id="ed-reel" value="${esc(edV('ed-reel',e.reel||''))}" placeholder="https://… (empty = clear)">${btn('reel','Save')}</div></div>`;
+    if(wk) h+=`<div class="edsec"><h4>YouTube \u00b7 ${WEEKS[wk-1][0]}\u2013${WEEKS[wk-1][1]} Oct</h4><div class="edrow"><input type="url" id="ed-yt" value="${esc(edV('ed-yt',y&&y.url||''))}" placeholder="https://… (empty = clear)">${btn('yt','Save')}</div></div>`;
+    const bk=Object.entries(p.sales||{}).filter(([,x])=>x.day===d);
+    h+=`<div class="edsec"><h4>Bookings on this day</h4>${bk.map(([sid,x])=>`<div class="edrow"><span style="flex:1 1 200px">${cnt(x)} \u00d7 ${esc(x.note||'Booking')} \u00b7 ${esc(partTxt(x))}${x.with?' \u00b7 with '+esc(x.with):''}${x.cancelled?' \u00b7 cancelled':''}</span><button class="link" data-eddel="${esc(sid)}" data-who="${esc(id)}" data-day="${d}">Delete</button></div>`).join('')||'<span class="xs">No bookings.</span>'}
+      <div class="edrow"><input type="number" id="ed-bcount" min="1" max="20" value="${esc(edV('ed-bcount','1'))}" style="width:64px" aria-label="How many"><input type="text" id="ed-bnote" value="${esc(edV('ed-bnote',''))}" placeholder="Project / unit"><input type="number" id="ed-bpct" min="1" max="100" value="${esc(edV('ed-bpct',''))}" placeholder="%" style="width:70px" aria-label="Percent"></div>
+      <div class="edrow">${['closer','caller','ads'].map(r=>`<label class="tick"><input type="checkbox" id="ed-r-${r}"${edV('ed-r-'+r,false)?' checked':''}> ${r[0].toUpperCase()+r.slice(1)}</label>`).join('')}<input type="text" id="ed-bwith" value="${esc(edV('ed-bwith',''))}" placeholder="With whom">${btn('sale_add','Add booking')}</div></div>`;
+    if(mc) h+='<span class="xs">This is an MC day. To edit tasks, remove the MC day in Review first.</span>';
+    return h+'</div>';
+  }
+  async function edSave(t){
+    const id=t.dataset.who, d=+t.dataset.day, what=t.dataset.ed; let data={};
+    const g=x=>($(x)||{}).value||'';
+    if(what==='att'){ const vin=g('ed-in'), vout=g('ed-out'); t.textContent='Saving\u2026';
+      try{ allStates[id]=await rpc('admin_att',{p_id:id,p_day:d,p_in:vin,p_out:vin?vout:''}); delete edDraft['ed-in']; delete edDraft['ed-out']; flash('Attendance saved'); }catch(err){flash(errText(err));} render(); return; }
+    if(what==='video') data={time:g('ed-vid')};
+    if(what==='appts') data={appts:edAppts.filter(r=>String(r.client||'').trim())};
+    if(what==='reel') data={reel:g('ed-reel').trim()};
+    if(what==='yt') data={week:weekOf(d),url:g('ed-yt').trim()};
+    if(what==='sale_add'){ const roles=['closer','caller','ads'].filter(r=>$('ed-r-'+r)&&$('ed-r-'+r).checked);
+      data={note:g('ed-bnote').trim(),count:+g('ed-bcount')||1,pct:+g('ed-bpct'),roles,with:g('ed-bwith').trim()}; }
+    t.textContent='Saving\u2026';
+    try{ allStates[id]=await rpc('admin_edit',{p_id:id,p_day:d,p_what:what,p_data:data});
+      if(what==='sale_add') ['ed-bnote','ed-bpct','ed-bwith','ed-bcount','ed-r-closer','ed-r-caller','ed-r-ads'].forEach(x=>delete edDraft[x]); else Object.keys(edDraft).forEach(x=>{ if(x.indexOf('ed-'+(what==='video'?'vid':what))===0) delete edDraft[x]; });
+      if(what==='appts'){ const e=(allStates[id].days||{})[key(d)]||{}; edAppts=JSON.parse(JSON.stringify(e.appts||[])); }
+      flash('Saved'); }
+    catch(err){ flash(errText(err)); }
+    render();
+  }
+  document.addEventListener('input',e=>{ const t=e.target; if(!recEdit) return;
+    if(t.dataset&&t.dataset.ei!==undefined){ edAppts[+t.dataset.ei][t.dataset.ef]=t.value; return; }
+    if(t.id&&t.id.indexOf('ed-')===0) edDraft[t.id]=t.type==='checkbox'?t.checked:t.value; });
+  document.addEventListener('change',e=>{ const t=e.target; if(recEdit&&t.type==='checkbox'&&t.id&&t.id.indexOf('ed-')===0) edDraft[t.id]=t.checked; });
+
   async function attClick(e){
+    const T=e.target, D=T.dataset||{};
+    if(D.edopen){ openRecEdit(D.who,+D.edopen); return true; }
+    if(D.edclose){ recEdit=''; edDraft={}; render(); return true; }
+    if(D.edaddappt){ edAppts.push({time:'',client:'',note:'',role:'both',with:''}); render(); return true; }
+    if(D.edrm!==undefined){ edAppts.splice(+D.edrm,1); render(); return true; }
+    if(D.ed){ await edSave(T); return true; }
+    if(D.eddel){ if(T.dataset.sure!=='1'){T.dataset.sure='1';T.textContent='Tap again to delete';return true;}
+      T.textContent='Deleting\u2026'; try{ allStates[D.who]=await rpc('admin_edit',{p_id:D.who,p_day:+D.day,p_what:'sale_del',p_data:{sid:D.eddel}}); flash('Booking deleted'); }catch(err){flash(errText(err));} render(); return true; }
     const t=e.target, ds=t.dataset||{};
     if(ds.attedit){ attEdit=ds.who+'|'+ds.attedit; render(); return true; }
     if(ds.attcancel){ attEdit=''; render(); return true; }
@@ -848,13 +910,13 @@ body{margin:0}
       const bks=bookingsOf(p,upDay).map(([sid,x])=>`<div${x.cancelled?' style="text-decoration:line-through;opacity:.6"':''}><b>${cnt(x)}</b> × ${esc(x.note||'Booking')}${x.at?` <span class="xs">${hhmm(x.at)}</span>`:''}<br><span class="xs">${esc(partTxt(x))} (${nfmt(ownShare(x))})${x.with?', with '+esc(x.with):''}</span></div>`).join('')
         +taggedFor(id).filter(x=>x.day===upDay).map(x=>`<div${x.cancelled?' style="text-decoration:line-through;opacity:.6"':''}><span class="xs">${[x.caller===id?'Caller':'',x.ads===id?'Ads':''].filter(Boolean).join(' + ')} on ${esc(nameOf(x.from))}\u2019s booking:</span> ${cnt(x)} \u00d7 ${esc(x.note||'Booking')}</div>`).join('')||'<span class="note">none</span>';
       const head=`<div class="row" style="justify-content:space-between"><b>${esc(r.name)}</b>${s==='mc'?chip(null,'MC'):s==='wknd'?chip(null,'Weekend'):s==='ok'?chip(true,'✓ Present'):s==='noout'?chip(false,'No sign-out'):s==='late'?chip(false,'Not counted'):chip(false,'Not signed in')}</div><div class="note">${who(id)}</div>`;
-      if(s==='mc') return `<div class="upcard">${head}<dl class="rec"><dt>MC reason</dt><dd>${esc(e.reason||'')}</dd><dt>Letter</dt><dd>${e.file?fileBtn(e.file,'View letter'):'<span class="note">sent separately</span>'}</dd><dt>Bookings</dt><dd>${bks}</dd></dl></div>`;
+      if(s==='mc') return `<div class="upcard">${head}<dl class="rec"><dt>MC reason</dt><dd>${esc(e.reason||'')}</dd><dt>Letter</dt><dd>${e.file?fileBtn(e.file,'View letter'):'<span class="note">sent separately</span>'}</dd><dt>Bookings</dt><dd>${bks}</dd></dl>${recEdit===id+'|'+upDay?recEditor(id,upDay):`<button class="link strong" data-edopen="${upDay}" data-who="${esc(id)}">\u270e Edit day</button>`}</div>`;
       const attIn=a.admin?'<span class="ok">Marked attended by you</span>':a.in?`${hhmm(a.in)}${a.edited?' <span class="xs">(edited by you)</span>':''} ${fileBtn(a.photo,'Photo')}`:'<span class="note">–</span>';
       const attOut=a.admin?'':a.out?hhmm(a.out)+(s==='ok'?' <span class="ok">✓ counted</span>':' <span class="bad">not counted</span>'):a.in?'<span class="bad">Not signed out – no marks</span>':'<span class="note">–</span>';
       const vidTxt=v?`${hhmm(v.at)} ${c.video?'<span class="ok">✓</span>':'<span class="bad">outside 9–10am</span>'} ${fileBtn(v.file,'Watch')}`:'<span class="note">–</span>';
       const ap=e?(e.appts||[]).filter(x=>x&&String(x.client||'').trim()):[];
       const apTxt=ap.length?ap.map((x,i)=>`<div>${i+1}. ${x.time?esc(x.time)+' · ':''}<b>${esc(x.client)}</b>${x.note?' · '+esc(x.note):''} <span class="xs">${roleTxt(x)}${x.with?', with '+esc(nameOf(x.with)):''}</span></div>`).join('')+(e.at?`<span class="xs">sent ${hhmm(e.at)}</span>`:''):'<span class="note">not submitted</span>';
-      const mark=wd?(attEdit===id+'|'+upDay?attEditor(id,upDay):`<div class="row" style="gap:14px">${!c.qr?`<button class="link" data-mark="${upDay}" data-who="${esc(id)}">Mark attended</button>`:''}<button class="link" data-attedit="${upDay}" data-who="${esc(id)}">Edit times</button></div>`):'';
+      const mark=recEdit===id+'|'+upDay?recEditor(id,upDay):(wd&&attEdit===id+'|'+upDay?attEditor(id,upDay):`<div class="row" style="gap:14px">${wd&&!c.qr?`<button class="link" data-mark="${upDay}" data-who="${esc(id)}">Mark attended</button>`:''}${wd?`<button class="link" data-attedit="${upDay}" data-who="${esc(id)}">Edit times</button>`:''}<button class="link strong" data-edopen="${upDay}" data-who="${esc(id)}">\u270e Edit day</button></div>`);
       return `<div class="upcard${s==='noout'?' warn':''}">${head}
         <dl class="rec">
           ${!wd?'<dt>Office</dt><dd><span class="note">weekend</span></dd>':`<dt>Sign in</dt><dd>${attIn}</dd>
@@ -1071,8 +1133,8 @@ body{margin:0}
   });
 
   // refresh clock/day every 30s; refresh back office every 60s
-  let lastT=today(); setInterval(()=>{const t=today(); if(t!==lastT){lastT=t; if(!practice){day=Math.min(DAYS,Math.max(1,t)); draft=null; ui={};} } render();},30000);
-  setInterval(()=>{ if(isAdmin&&!practice) loadAdmin(); },60000);
+  let lastT=today(); setInterval(()=>{const t=today(); if(t!==lastT){lastT=t; if(!practice){day=Math.min(DAYS,Math.max(1,t)); draft=null; ui={};} } if(!recEdit&&!attEdit) render();},30000);
+  setInterval(()=>{ if(isAdmin&&!practice&&!recEdit&&!attEdit) loadAdmin(); },60000);
 
   // ---------- start ----------
   if(location.hash==='#attend') showTab('checkin');
