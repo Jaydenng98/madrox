@@ -333,9 +333,9 @@ body{margin:0}
           <b>KPI 1 · Daily tasks (50)</b>
           <ul>
             <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
-            <li>Check-in is open 9am–9pm: learning video 9–10am, everything else from 10am.</li>
+            <li>Learning video 9–10am. Appointments, reel, YouTube and bookings 10am–11:59pm.</li>
             <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
-            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
+            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Log every appointment you have; 2 a day count for marks. Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
             <li>Reels: 1 a day with the link (its own submit), Monday to Friday only, 22 days</li>
             <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
             <li>YouTube: 1 link a week (Shorts or full video), 4 weeks: 5–11, 12–18, 19–25 and 26–31 Oct, target 4</li>
@@ -382,9 +382,9 @@ body{margin:0}
           <b>KPI 1 · Daily tasks (50)</b>
           <ul>
             <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
-            <li>Check-in is open 9am–9pm: learning video 9–10am, everything else from 10am.</li>
+            <li>Learning video 9–10am. Appointments, reel, YouTube and bookings 10am–11:59pm.</li>
             <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
-            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
+            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Log every appointment you have; 2 a day count for marks. Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
             <li>Reels: 1 a day with the link (its own submit), Monday to Friday only, 22 days</li>
             <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
             <li>YouTube: 1 link a week (Shorts or full video), 4 weeks: 5–11, 12–18, 19–25 and 26–31 Oct, target 4</li>
@@ -428,7 +428,7 @@ body{margin:0}
   // ======================
 
   const APP_URL=location.origin+location.pathname+'#attend';
-  const YEAR=2026, MONTH=9, DAYS=31, VID_FROM=9*60, VID_TO=10*60, ATT_FROM=9*60+45, ATT_TO=10*60+1, OUT_TO=24*60, OPEN_AT=10*60, CLOSE_AT=21*60, MAX_MC=3;
+  const YEAR=2026, MONTH=9, DAYS=31, VID_FROM=9*60, VID_TO=10*60, ATT_FROM=9*60+45, ATT_TO=10*60+1, OUT_TO=24*60, OPEN_AT=10*60, CLOSE_AT=24*60, MC_TO=21*60, MAX_MC=3;
   const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const dow=d=>new Date(YEAR,MONTH,d).getDay();
   const isWeekday=d=>{const w=dow(d);return w>0&&w<6};
@@ -665,16 +665,16 @@ body{margin:0}
         // appointments
         let body=ap.length?`<div class="tasks">${ap.map((r,i)=>`<div class="task"><div><b>Appointment ${i+1} · ${esc(r.client)}</b><small>${r.time?esc(r.time)+' · ':''}${roleTxt(r)}${r.with?' · with '+esc(nameOf(r.with)):''}${r.note?' · '+esc(r.note):''}</small></div>${chip(true,'✓ '+(r.at?hhmm(r.at):'Sent'))}</div>`).join('')}</div>`:'';
         if(live&&beforeTen){ body+='<p class="note" style="margin:0">Appointments open at 10:00am.</p>'; }
-        else if(live&&ap.length<4&&units<2){
+        else if(live){
           const r=D.appts[0], others=Object.keys(roster).filter(x=>x!==id).sort((x,y)=>roster[x].name.localeCompare(roster[y].name));
-          body+=`<div class="label" style="margin:${ap.length?'12px':'0'} 0 6px">Appointment ${n}${n>2?' (extra)':''}</div>
+          body+=`<div class="label" style="margin:${ap.length?'12px':'0'} 0 6px">Appointment ${n}</div>
           <div class="apptbox"><div class="appt"><input type="time" id="at-0" data-a="0" data-f="time" value="${esc(r.time)}" aria-label="Appointment ${n} time"><input type="text" id="ac-0" data-a="0" data-f="client" value="${esc(r.client)}" placeholder="Client name" aria-label="Appointment ${n} client"><input type="text" id="an-0" data-a="0" data-f="note" value="${esc(r.note)}" placeholder="Unit / project / purpose" aria-label="Appointment ${n} details"></div>
             <div class="appt2"><select id="ar-0" data-a="0" data-f="role" aria-label="My part">${Object.entries(ROLE).map(([k,v])=>`<option value="${k}"${r.role===k?' selected':''}>My part: ${v.l} (${nfmt(v.u)})</option>`).join('')}</select><select id="aw-0" data-a="0" data-f="with" aria-label="With whom"><option value="">${r.role==='both'?'With: no one':'With whom? (optional)'}</option>${others.map(x=>`<option value="${esc(x)}"${r.with===x?' selected':''}>With: ${esc(roster[x].name)}</option>`).join('')}<option value="other"${r.with==='other'?' selected':''}>With: someone outside MADROX</option></select></div></div>
-          <p class="note" style="margin:6px 0 0">Your part: <b>Setter</b> = 0.5, <b>Attendee</b> = 0.5, <b>Set &amp; met</b> = 1. 2 count per day.</p>
+          <p class="note" style="margin:6px 0 0">Your part: <b>Setter</b> = 0.5, <b>Attendee</b> = 0.5, <b>Set &amp; met</b> = 1. Log every appointment, as many as you have. 2 a day count for marks. Open until 11:59pm.</p>
           <button class="btn big" id="apYes" style="margin-top:10px" ${dis}>Submit appointment ${n}</button>
           <p class="note" style="margin:4px 0 0">Saved straight away. You can\u2019t change it after.</p>`;
         } else if(!ap.length) body+='<p class="note" style="margin:0">No appointments this day.</p>';
-        if(live&&!beforeTen&&!e) body+=`<button class="link" id="mcOpen" style="margin-top:10px;display:block" ${mcUsed>=MAX_MC?'disabled':''}>${mcUsed>=MAX_MC?'All 3 MC days used':'On MC today?'}</button>`;
+        if(live&&!beforeTen&&!e&&(tst||m<MC_TO)) body+=`<button class="link" id="mcOpen" style="margin-top:10px;display:block" ${mcUsed>=MAX_MC?'disabled':''}>${mcUsed>=MAX_MC?'All 3 MC days used':'On MC today?'}</button>`;
         if(ui.apMsg) body=`<div class="banner" style="margin:0 0 8px;${ui.apMsg.ok?'background:var(--good-soft);color:var(--good)':''}">${esc(ui.apMsg.text)}</div>`+body;
         html+=card('3 · Appointments',chip(counted>=2?true:(live?null:false),`${nfmt(counted)}/2 counted`),body);
         // reel
@@ -706,7 +706,7 @@ body{margin:0}
     $('saleForm').hidden=!open;
     if(open){ const p=+$('salePct').value;
       $('saleShare').textContent=p>0&&p<=100?`You get ${nfmt(p/100)} mark for this deal (1 full deal = 1 mark).`:'Type your % of this deal, e.g. 60 if your commission split is 60%.'; }
-    $('saleHint').textContent=!id?'Log in to add bookings.':open?'Everyone on the deal adds their own part and their own %. 1 full deal = 1 mark, so 60% = 0.6 mark. Write the project and who you worked with. Saved with today’s date and can’t be edited. Ask Alicia if a deal is cancelled.':(t>=1&&t<=DAYS?'Bookings can be added between 10:00am and 9:00pm.':'Bookings can be added from 1 to 31 October.');
+    $('saleHint').textContent=!id?'Log in to add bookings.':open?'Everyone on the deal adds their own part and their own %. 1 full deal = 1 mark, so 60% = 0.6 mark. Write the project and who you worked with. Saved with today’s date and can’t be edited. Ask Alicia if a deal is cancelled.':(t>=1&&t<=DAYS?'Bookings can be added between 10:00am and 11:59pm.':'Bookings can be added from 1 to 31 October.');
     const own=Object.entries((id&&dataOf(id).sales)||{}).map(([sid,x])=>({...x,sid,mine:true}));
     const list=own.concat(taggedFor(id)).sort((a,b)=>(a.day||0)-(b.day||0)||(a.at||0)-(b.at||0));
     $('sales').innerHTML=list.length?list.map(x=>{ const sh=x.mine?ownShare(x):((x.caller===id?SHARE.caller:0)+(x.ads===id?SHARE.ads:0));
@@ -829,7 +829,7 @@ body{margin:0}
     if(wd&&!mc) h+=`<div class="edsec"><h4>Sign in / sign out</h4><div class="edrow"><input type="time" id="ed-in" value="${esc(edV('ed-in',a.in?hhmm(a.in):''))}" aria-label="Sign in"><input type="time" id="ed-out" value="${esc(edV('ed-out',a.out?hhmm(a.out):''))}" aria-label="Sign out">${btn('att','Save')}</div><span class="xs">Empty sign-in = clear the day. Counts when sign in is 9:45\u201310:00am and sign out by 11:59pm.</span></div>`;
     if(!mc) h+=`<div class="edsec"><h4>Learning video</h4><div class="edrow"><input type="time" id="ed-vid" value="${esc(edV('ed-vid',v&&v.at?hhmm(v.at):''))}" aria-label="Video time">${btn('video','Save')}</div><span class="xs">Empty = clear. Counts when the time is 9:00\u201310:00am.</span></div>`;
     if(!mc) h+=`<div class="edsec"><h4>Appointments</h4>${edAppts.map((r,i)=>`<div class="edrow"><input type="time" data-ei="${i}" data-ef="time" value="${esc(r.time||'')}" aria-label="Time"><input type="text" data-ei="${i}" data-ef="client" value="${esc(r.client||'')}" placeholder="Client"><input type="text" data-ei="${i}" data-ef="note" value="${esc(r.note||'')}" placeholder="Details"><select data-ei="${i}" data-ef="role">${Object.entries(ROLE).map(([kk,vv])=>`<option value="${kk}"${(r.role||'both')===kk?' selected':''}>${vv.l} (${nfmt(vv.u)})</option>`).join('')}</select><select data-ei="${i}" data-ef="with"><option value="">With: no one</option>${others.map(x=>`<option value="${esc(x)}"${r.with===x?' selected':''}>${esc(roster[x].name)}</option>`).join('')}<option value="other"${r.with==='other'?' selected':''}>Outside MADROX</option></select><button class="link" data-edrm="${i}">Remove</button></div>`).join('')||'<span class="xs">No appointments.</span>'}
-      <div class="edrow">${edAppts.length<6?'<button class="btn ghost" data-edaddappt="1">+ Add appointment</button>':''}${btn('appts','Save appointments')}</div></div>`;
+      <div class="edrow">${'<button class="btn ghost" data-edaddappt="1">+ Add appointment</button>'}${btn('appts','Save appointments')}</div></div>`;
     if(wd&&!mc) h+=`<div class="edsec"><h4>Reel link</h4><div class="edrow"><input type="url" id="ed-reel" value="${esc(edV('ed-reel',e.reel||''))}" placeholder="https://… (empty = clear)">${btn('reel','Save')}</div></div>`;
     if(wk) h+=`<div class="edsec"><h4>YouTube \u00b7 ${WEEKS[wk-1][0]}\u2013${WEEKS[wk-1][1]} Oct</h4><div class="edrow"><input type="url" id="ed-yt" value="${esc(edV('ed-yt',y&&y.url||''))}" placeholder="https://… (empty = clear)">${btn('yt','Save')}</div></div>`;
     const bk=Object.entries(p.sales||{}).filter(([,x])=>x.day===d);
@@ -1003,9 +1003,9 @@ body{margin:0}
     if(t.id==='reelUrl'){draft.reel=t.value;ui.repConfirm=false;ui.rlConfirm=false;}
     if(t.id==='mcReason') draft.mcReason=t.value;
   });
-  const MSG={video:'The learning video can only be uploaded between 9:00am and 10:00am.',att:'Sign in is open from 9:45am to 10:00am, Monday to Friday.',out:'Sign out is open until 11:59pm.',main:'This is open from 10:00am to 9:00pm.'};
+  const MSG={video:'The learning video can only be uploaded between 9:00am and 10:00am.',att:'Sign in is open from 9:45am to 10:00am, Monday to Friday.',out:'Sign out is open until 11:59pm.',main:'This is open from 10:00am to 11:59pm.'};
   const guard=(k='main')=>{ if(day!==today()){ui={};render();flash('Check in on today instead.');return true;} if(!openFor(k)){ui={};render();flash(MSG[k]);return true;} return false; };
-  const guardOld=()=>{ if(day!==today()){ui={};render();flash('Check in on today instead.');return true;} if(!inWindow()){ui={};render();flash('This is open from 10:00am to 9:00pm.');return true;} return false; };
+  const guardOld=()=>{ if(day!==today()){ui={};render();flash('Check in on today instead.');return true;} if(!inWindow()){ui={};render();flash('This is open from 10:00am to 11:59pm.');return true;} return false; };
   dv.addEventListener('change',async e=>{
     const t=e.target; if(!draft||!t.files||!t.files[0]) return;
     if(t.id==='inPhoto'||t.id==='mcFile'){ try{const b=await compress(t.files[0]); if(t.id==='inPhoto') draft.inImg=b; else draft.mcImg=b; renderDayView();}catch(err){flash(err.message);} }
@@ -1029,7 +1029,7 @@ body{margin:0}
     if(id==='apYes'){ const r=draft.appts[0];
       if(!String(r.client||'').trim()){ ui.apMsg={ok:false,text:'Write the client name first.'}; renderDayView(); return; }
       if(day!==today()){ ui.apMsg={ok:false,text:'You can only add appointments for today.'}; renderDayView(); return; }
-      if(!openFor('main')){ ui.apMsg={ok:false,text:'Appointments are open from 10:00am to 9:00pm.'}; renderDayView(); return; }
+      if(!openFor('main')){ ui.apMsg={ok:false,text:'Appointments are open from 10:00am to 11:59pm.'}; renderDayView(); return; }
       const k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
       const item={time:r.time,client:r.client.trim(),note:r.note.trim(),role:r.role||'both',with:r.with||''}, n=(cur.appts||[]).length+1;
       const ok=await act('appt',item,{days:{[k]:{appts:[...(cur.appts||[]),{...item,at:now()}],reel:cur.reel||'',at:cur.at||now()}}},`Appointment ${n} saved`);
@@ -1039,7 +1039,7 @@ body{margin:0}
     if(id==='rlNo'){ ui.rlConfirm=false; renderDayView(); return; }
     if(id==='rlYes'){ const reel=String(draft.reel||'').trim();
       if(!isUrl(reel)){ ui.rlMsg={text:'Paste the full reel link, starting with https://'}; renderDayView(); return; }
-      if(day!==today()||!openFor('main')){ ui.rlMsg={text:'The reel link is open from 10:00am to 9:00pm today.'}; renderDayView(); return; }
+      if(day!==today()||!openFor('main')){ ui.rlMsg={text:'The reel link is open from 10:00am to 11:59pm today.'}; renderDayView(); return; }
       const k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
       const ok=await act('reel',{reel},{days:{[k]:{appts:cur.appts||[],reel,reelAt:now(),at:cur.at||now()}}},'Reel link saved');
       if(!ok){ ui.rlMsg={text:'Not saved: '+lastActErr}; renderDayView(); } return; }
@@ -1054,12 +1054,12 @@ body{margin:0}
       try{ const path=draft.mcImg?await upload('mc',draft.mcImg,'jpg'):null; busy=false; const reason=draft.mcReason.trim(); await act('mc',{reason,path},{days:{[key(day)]:{mc:true,reason,file:path,at:now()}}},'MC submitted'); }catch(err){busy=false;flash(err.message);render();} return; }
   });
   $('ytBox').addEventListener('click',e=>{
-    if(e.target.id!=='ytSend') return; const t=today(); if(t<1||t>DAYS) return; if(!inWindow()){flash('This is open from 10:00am to 9:00pm.');render();return;}
+    if(e.target.id!=='ytSend') return; const t=today(); if(t<1||t>DAYS) return; if(!inWindow()){flash('This is open from 10:00am to 11:59pm.');render();return;}
     const u=($('ytUrl').value||'').trim(); if(!isUrl(u)){flash('Paste the full YouTube link, starting with https://');return;}
     act('youtube',{url:u},{yt:{['w'+weekOf(t)]:{url:u,at:now()}}},'YouTube submitted for this week');
   });
   $('addSale').addEventListener('click',()=>{
-    const t=today(); if(!myAgent()||t<1||t>DAYS) return; if(!inWindow()){flash('This is open from 10:00am to 9:00pm.');render();return;}
+    const t=today(); if(!myAgent()||t<1||t>DAYS) return; if(!inWindow()){flash('This is open from 10:00am to 11:59pm.');render();return;}
     const note=$('saleNote').value.trim(); if(!note){flash('Write the project and unit of the booking.');return;}
     const count=Math.round(+$('saleCount').value); if(!(count>=1&&count<=20)){flash('Number of bookings must be between 1 and 20.');return;}
     const roles=myRoles(); if(!roles.length){flash('Tick your part: closer, caller or ads.');return;}
