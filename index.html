@@ -328,8 +328,8 @@ body{margin:0}
             <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
             <li>Check-in is open 9am–9pm: learning video 9–10am, everything else from 10am.</li>
             <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
-            <li>Appointments: 2 a day with client names, every day (target 62). Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
-            <li>Reels: 1 a day with the link, Monday to Friday only, 22 days</li>
+            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
+            <li>Reels: 1 a day with the link (its own submit), Monday to Friday only, 22 days</li>
             <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
             <li>YouTube: 1 link a week (Shorts or full video), 4 weeks: 5–11, 12–18, 19–25 and 26–31 Oct, target 4</li>
             <li>MC days (max 3) need a reason (send the doctor\u2019s letter to Alicia), and come off the targets.</li>
@@ -377,8 +377,8 @@ body{margin:0}
             <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
             <li>Check-in is open 9am–9pm: learning video 9–10am, everything else from 10am.</li>
             <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
-            <li>Appointments: 2 a day with client names, every day (target 62). Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
-            <li>Reels: 1 a day with the link, Monday to Friday only, 22 days</li>
+            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
+            <li>Reels: 1 a day with the link (its own submit), Monday to Friday only, 22 days</li>
             <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
             <li>YouTube: 1 link a week (Shorts or full video), 4 weeks: 5–11, 12–18, 19–25 and 26–31 Oct, target 4</li>
             <li>MC days (max 3) need a reason (send the doctor\u2019s letter to Alicia), and come off the targets.</li>
@@ -642,38 +642,43 @@ body{margin:0}
       } else html+=card('2 · Learning video (9–10am)',chip(false,'Missed'),'<p class="note" style="margin:0">No video check-in this day. It\u2019s only open 9:00\u201310:00am.</p>');
     }
 
-    // 3. Daily report
-    if(e){
-      const rows=(e.appts||[]).filter(r=>r.client);
-      html+=card('3 · Daily report',chip(true,'Submitted '+hhmm(e.at)),
-        `<div class="label" style="margin-bottom:4px">Appointments (${nfmt(Math.min(2,rows.reduce((s,r)=>s+unitOf(r),0)))}/2 counted)</div>${rows.length?`<div class="tbl"><table><thead><tr><th>Time</th><th>Client</th><th>My part</th><th>Details</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.time||'–')}</td><td>${esc(r.client)}</td><td>${roleTxt(r)}${r.with?`<br><span class="note">with ${esc(nameOf(r.with))}</span>`:''}</td><td style="white-space:normal">${esc(r.note||'')}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">None</p>'}
-         ${wd?`<div class="label" style="margin:10px 0 4px">Reel</div><p style="margin:0">${link(e.reel)}</p>`:''}`);
-    } else if(live&&beforeTen){ html+=card('3 · Daily report',chip(null,'Opens 10am'),'<p class="note" style="margin:0">The daily report opens at 10:00am.</p>');
-    } else if(live){
-      const mcUsed=Object.values(p.days||{}).filter(x=>x.mc).length;
-      if(ui.mcOpen){
+    // 3. Appointments (one at a time) and 4. Reel link (own submit)
+    {
+      const ap=e&&!e.mc?(e.appts||[]).filter(r=>r&&r.client):[];
+      const units=ap.reduce((s,r)=>s+unitOf(r),0), counted=Math.min(2,units), n=ap.length+1;
+      const mcUsed=Object.values(p.days||{}).filter(x=>x&&x.mc).length;
+      if(live&&ui.mcOpen){
         html+=card('MC day',chip(null,`${mcUsed}/${MAX_MC} used`),`
           <label class="label" for="mcReason">Reason</label><textarea id="mcReason" rows="2" placeholder="e.g. Fever, clinic visit">${esc(D.mcReason)}</textarea>
-          <div class="row" style="margin-top:8px"><label class="filebtn">${D.mcImg?'Letter photo ready ✓':'Photo of doctor’s letter (optional \u2013 or send it to Alicia)'}<input type="file" id="mcFile" accept="image/*" hidden></label></div>
+          <div class="row" style="margin-top:8px"><label class="filebtn">${D.mcImg?'Letter photo ready ✓':'Photo of doctor’s letter (optional – or send it to Alicia)'}<input type="file" id="mcFile" accept="image/*" hidden></label></div>
           ${ui.mcConfirm?`<div class="confirm"><span>Submit MC for ${day} Oct? This locks the whole day.</span><div class="row"><button class="btn" id="mcYes" ${dis}>Yes, submit MC</button><button class="btn ghost" id="mcNo">Go back</button></div></div>`
           :`<div class="row" style="margin-top:10px"><button class="btn" id="mcGo">Submit MC</button><button class="btn ghost" id="mcCancel">Cancel</button></div>`}`);
       } else {
-        const valid=D.appts.filter(r=>r.client.trim()).length, units=D.appts.filter(r=>r.client.trim()).reduce((s,r)=>s+unitOf(r),0);
-        const others=Object.keys(roster).filter(x=>x!==id).sort((x,y)=>roster[x].name.localeCompare(roster[y].name));
-        html+=card('3 · Daily report',chip(null,'Not yet'),`
-          <div class="label" style="margin-bottom:6px" id="apptLabel">${apptLabel(units)}</div>
-          <p class="note" style="margin:0 0 8px">For each appointment, choose your part: <b>Setter</b> (you secured it) = 0.5, <b>Attendee</b> (you met the client) = 0.5, <b>Set &amp; met</b> (you did both) = 1. Up to 2 count per day.</p>
-          <div class="appts">${D.appts.map((r,i)=>`<div class="apptbox"><div class="appt"><input type="time" id="at-${i}" data-a="${i}" data-f="time" value="${esc(r.time)}" aria-label="Appointment ${i+1} time"><input type="text" id="ac-${i}" data-a="${i}" data-f="client" value="${esc(r.client)}" placeholder="Client name" aria-label="Appointment ${i+1} client"><input type="text" id="an-${i}" data-a="${i}" data-f="note" value="${esc(r.note)}" placeholder="Unit / project / purpose" aria-label="Appointment ${i+1} details"></div>
-            <div class="appt2"><select id="ar-${i}" data-a="${i}" data-f="role" aria-label="Appointment ${i+1} my part">${Object.entries(ROLE).map(([k,v])=>`<option value="${k}"${r.role===k?' selected':''}>My part: ${v.l} (${nfmt(v.u)})</option>`).join('')}</select><select id="aw-${i}" data-a="${i}" data-f="with" aria-label="Appointment ${i+1} with whom"><option value="">${r.role==='both'?'With: no one':'With whom? (optional)'}</option>${others.map(x=>`<option value="${esc(x)}"${r.with===x?' selected':''}>With: ${esc(roster[x].name)}</option>`).join('')}<option value="other"${r.with==='other'?' selected':''}>With: someone outside MADROX</option></select></div></div>`).join('')}</div>
-          ${D.appts.length<6?'<button class="btn ghost" id="apptAdd" style="margin-top:6px">+ Add appointment</button>':''}
-          ${wd?`<label class="label" for="reelUrl" style="display:block;margin-top:14px">Today’s reel link</label>
-          <input type="url" id="reelUrl" placeholder="https://www.instagram.com/reel/…" value="${esc(D.reel)}">
-          <p class="note" style="margin:4px 0 0">No link, no reel mark for today. Reels are Monday to Friday.</p>`:'<p class="note" style="margin:14px 0 0">No reel needed on Saturday and Sunday.</p>'}
-          ${ui.repConfirm?`<div class="confirm"><span>Submit today’s report? <b>You can’t change it after.</b> ${units<2?`Your appointments count ${nfmt(units)} of 2. `:''}${wd&&!isUrl(D.reel)?'No reel link yet. ':''}</span><div class="row"><button class="btn" id="repYes" ${dis}>Yes, submit</button><button class="btn ghost" id="repNo">Go back</button></div></div>`
-            :`<button class="btn big" id="repGo" style="margin-top:12px">Submit daily report</button>`}
-          <button class="link" id="mcOpen" style="margin-top:10px" ${mcUsed>=MAX_MC?'disabled':''}>${mcUsed>=MAX_MC?'All 3 MC days used':'On MC today?'}</button>`);
+        // appointments
+        let body=ap.length?`<div class="tasks">${ap.map((r,i)=>`<div class="task"><div><b>Appointment ${i+1} · ${esc(r.client)}</b><small>${r.time?esc(r.time)+' · ':''}${roleTxt(r)}${r.with?' · with '+esc(nameOf(r.with)):''}${r.note?' · '+esc(r.note):''}</small></div>${chip(true,'✓ '+(r.at?hhmm(r.at):'Sent'))}</div>`).join('')}</div>`:'';
+        if(live&&beforeTen){ body+='<p class="note" style="margin:0">Appointments open at 10:00am.</p>'; }
+        else if(live&&ap.length<4&&units<2){
+          const r=D.appts[0], others=Object.keys(roster).filter(x=>x!==id).sort((x,y)=>roster[x].name.localeCompare(roster[y].name));
+          body+=`<div class="label" style="margin:${ap.length?'12px':'0'} 0 6px">Appointment ${n}${n>2?' (extra)':''}</div>
+          <div class="apptbox"><div class="appt"><input type="time" id="at-0" data-a="0" data-f="time" value="${esc(r.time)}" aria-label="Appointment ${n} time"><input type="text" id="ac-0" data-a="0" data-f="client" value="${esc(r.client)}" placeholder="Client name" aria-label="Appointment ${n} client"><input type="text" id="an-0" data-a="0" data-f="note" value="${esc(r.note)}" placeholder="Unit / project / purpose" aria-label="Appointment ${n} details"></div>
+            <div class="appt2"><select id="ar-0" data-a="0" data-f="role" aria-label="My part">${Object.entries(ROLE).map(([k,v])=>`<option value="${k}"${r.role===k?' selected':''}>My part: ${v.l} (${nfmt(v.u)})</option>`).join('')}</select><select id="aw-0" data-a="0" data-f="with" aria-label="With whom"><option value="">${r.role==='both'?'With: no one':'With whom? (optional)'}</option>${others.map(x=>`<option value="${esc(x)}"${r.with===x?' selected':''}>With: ${esc(roster[x].name)}</option>`).join('')}<option value="other"${r.with==='other'?' selected':''}>With: someone outside MADROX</option></select></div></div>
+          <p class="note" style="margin:6px 0 0">Your part: <b>Setter</b> = 0.5, <b>Attendee</b> = 0.5, <b>Set &amp; met</b> = 1. 2 count per day.</p>
+          ${ui.apConfirm?`<div class="confirm"><span>Submit appointment ${n} (${esc(r.client.trim())})? <b>You can’t change it after.</b></span><div class="row"><button class="btn" id="apYes" ${dis}>Yes, submit</button><button class="btn ghost" id="apNo">Go back</button></div></div>`
+            :`<button class="btn" id="apGo" style="margin-top:10px">Submit appointment ${n}</button>`}`;
+        } else if(!ap.length) body+='<p class="note" style="margin:0">No appointments this day.</p>';
+        if(live&&!beforeTen&&!e) body+=`<button class="link" id="mcOpen" style="margin-top:10px;display:block" ${mcUsed>=MAX_MC?'disabled':''}>${mcUsed>=MAX_MC?'All 3 MC days used':'On MC today?'}</button>`;
+        html+=card('3 · Appointments',chip(counted>=2?true:(live?null:false),`${nfmt(counted)}/2 counted`),body);
+        // reel
+        if(!wd) html+=card('4 · Reel link',chip(null,'Weekend'),'<p class="note" style="margin:0">No reel needed on Saturday and Sunday.</p>');
+        else if(e&&e.reel) html+=card('4 · Reel link',chip(true,'✓ '+(e.reelAt?hhmm(e.reelAt):'Submitted')),`<p style="margin:0">${link(e.reel)}</p>`);
+        else if(live&&beforeTen) html+=card('4 · Reel link',chip(null,'Opens 10am'),'<p class="note" style="margin:0">The reel link opens at 10:00am.</p>');
+        else if(live) html+=card('4 · Reel link',chip(null,'Not yet'),`<input type="url" id="reelUrl" placeholder="https://www.instagram.com/reel/…" value="${esc(D.reel)}">
+          <p class="note" style="margin:4px 0 0">Monday to Friday. No link, no reel mark for today.</p>
+          ${ui.rlConfirm?`<div class="confirm"><span>Submit today’s reel link? <b>You can’t change it after.</b></span><div class="row"><button class="btn" id="rlYes" ${dis}>Yes, submit</button><button class="btn ghost" id="rlNo">Go back</button></div></div>`
+            :`<button class="btn" id="rlGo" style="margin-top:10px">Submit reel link</button>`}`);
+        else html+=card('4 · Reel link',chip(false,'Missed'),'<p class="note" style="margin:0">No reel link this day.</p>');
       }
-    } else html+=card('3 · Daily report',chip(false,'Missed'),'<p class="note" style="margin:0">No report this day.</p>');
+    }
     box.innerHTML=html;
   }
 
@@ -929,8 +934,8 @@ body{margin:0}
   const dv=$('dayView');
   dv.addEventListener('input',e=>{
     if(!draft) return; const t=e.target;
-    if(t.dataset.a!==undefined){draft.appts[+t.dataset.a][t.dataset.f]=t.value; const u=draft.appts.filter(r=>r.client.trim()).reduce((s,r)=>s+unitOf(r),0); const l=$('apptLabel'); if(l) l.textContent=apptLabel(u); ui.repConfirm=false; if(t.dataset.f==='role'){ const w=$('aw-'+t.dataset.a); if(w&&w.options[0]) w.options[0].textContent=t.value==='both'?'With: no one':'With whom? (optional)'; }}
-    if(t.id==='reelUrl'){draft.reel=t.value;ui.repConfirm=false;}
+    if(t.dataset.a!==undefined){draft.appts[+t.dataset.a][t.dataset.f]=t.value; const u=draft.appts.filter(r=>r.client.trim()).reduce((s,r)=>s+unitOf(r),0); const l=$('apptLabel'); if(l) l.textContent=apptLabel(u); ui.repConfirm=false; ui.apConfirm=false; if(t.dataset.f==='role'){ const w=$('aw-'+t.dataset.a); if(w&&w.options[0]) w.options[0].textContent=t.value==='both'?'With: no one':'With whom? (optional)'; }}
+    if(t.id==='reelUrl'){draft.reel=t.value;ui.repConfirm=false;ui.rlConfirm=false;}
     if(t.id==='mcReason') draft.mcReason=t.value;
   });
   const MSG={video:'The learning video can only be uploaded between 9:00am and 10:00am.',att:'Sign in is open from 9:45am to 10:00am, Monday to Friday.',out:'Sign out is open until 11:59pm.',main:'This is open from 10:00am to 9:00pm.'};
@@ -954,7 +959,15 @@ body{margin:0}
     if(id==='signIn'){ if(guard('att')) return; act('signin',{},{att:{[key(day)]:{in:now()}}},'Signed in'); return; }
     if(id==='signOut'){ if(guard('out')) return; act('signout',{},{att:{[key(day)]:{out:now()}}},'Signed out'); return; }
     if(id==='apptAdd'){ if(draft.appts.length<6) draft.appts.push({time:'',client:'',note:'',role:'both',with:''}); renderDayView(); return; }
-    if(id==='repGo'){ if(isWeekday(day)&&draft.reel.trim()&&!isUrl(draft.reel)){flash('The reel link must start with https://');return;} ui.repConfirm=true; renderDayView(); return; }
+    if(id==='apGo'){ if(!draft.appts[0].client.trim()){flash('Write the client name first.');return;} ui.apConfirm=true; renderDayView(); return; }
+    if(id==='apNo'){ ui.apConfirm=false; renderDayView(); return; }
+    if(id==='apYes'){ if(guard()) return; const r=draft.appts[0], k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
+      const item={time:r.time,client:r.client.trim(),note:r.note.trim(),role:r.role||'both',with:r.with||''}, n=(cur.appts||[]).length+1;
+      act('appt',item,{days:{[k]:{appts:[...(cur.appts||[]),{...item,at:now()}],reel:cur.reel||'',at:cur.at||now()}}},`Appointment ${n} submitted`); return; }
+    if(id==='rlGo'){ if(!isUrl(draft.reel)){flash('Paste the full reel link, starting with https://');return;} ui.rlConfirm=true; renderDayView(); return; }
+    if(id==='rlNo'){ ui.rlConfirm=false; renderDayView(); return; }
+    if(id==='rlYes'){ if(guard()) return; const reel=draft.reel.trim(), k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
+      act('reel',{reel},{days:{[k]:{appts:cur.appts||[],reel,reelAt:now(),at:cur.at||now()}}},'Reel link submitted'); return; }
     if(id==='repNo'){ ui.repConfirm=false; renderDayView(); return; }
     if(id==='repYes'){ if(guard()) return; const appts=draft.appts.filter(r=>r.client.trim()).map(r=>({time:r.time,client:r.client.trim(),note:r.note.trim(),role:r.role||'both',with:r.with||''}));
       const reel=isWeekday(day)&&isUrl(draft.reel)?draft.reel.trim():''; act('report',{appts,reel},{days:{[key(day)]:{appts,reel,at:now()}}},'Daily report submitted'); return; }
