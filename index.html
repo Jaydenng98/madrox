@@ -335,7 +335,7 @@ body{margin:0}
             <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
             <li>Learning video 9–10am. Appointments, reel, YouTube and bookings 10am–11:59pm.</li>
             <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
-            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Log every appointment you have; 2 a day count for marks. Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
+            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Log every appointment you have; 2 a day count for marks. Every appointment = 1: just add the time, client name and project.</li>
             <li>Reels: 1 a day with the link (its own submit), Monday to Friday only, 22 days</li>
             <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
             <li>YouTube: 1 link a week (Shorts or full video), 4 weeks: 5–11, 12–18, 19–25 and 26–31 Oct, target 4</li>
@@ -384,7 +384,7 @@ body{margin:0}
             <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
             <li>Learning video 9–10am. Appointments, reel, YouTube and bookings 10am–11:59pm.</li>
             <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
-            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Log every appointment you have; 2 a day count for marks. Choose your part for each: Setter (you secured it) = 0.5, Attendee (you met the client) = 0.5, Set &amp; met (both) = 1. Never claim the other person’s half.</li>
+            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Log every appointment you have; 2 a day count for marks. Every appointment = 1: just add the time, client name and project.</li>
             <li>Reels: 1 a day with the link (its own submit), Monday to Friday only, 22 days</li>
             <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
             <li>YouTube: 1 link a week (Shorts or full video), 4 weeks: 5–11, 12–18, 19–25 and 26–31 Oct, target 4</li>
@@ -443,7 +443,7 @@ body{margin:0}
   const cr=n=>nfmt(n)+(n===1?' mark':' marks');
   // appointment roles: both = 1, setter = 0.5, attendee = 0.5
   const ROLE={both:{u:1,l:'Set & met'},set:{u:0.5,l:'Setter'},meet:{u:0.5,l:'Attendee'}};
-  const unitOf=r=>(ROLE[r&&r.role]||ROLE.both).u;
+  const unitOf=r=>1;   // every appointment = 1 (no more setter/attendee halves)
   const roleTxt=r=>(ROLE[r&&r.role]||ROLE.both).l+' \u00b7 '+nfmt(unitOf(r));
   // booking shares: closer 70%, caller 20%, ads 10%; an empty role goes to the closer
   const SHARE={closer:0.7,caller:0.2,ads:0.1};
@@ -663,14 +663,14 @@ body{margin:0}
           :`<div class="row" style="margin-top:10px"><button class="btn" id="mcGo">Submit MC</button><button class="btn ghost" id="mcCancel">Cancel</button></div>`}`);
       } else {
         // appointments
-        let body=ap.length?`<div class="tasks">${ap.map((r,i)=>`<div class="task"><div><b>Appointment ${i+1} · ${esc(r.client)}</b><small>${r.time?esc(r.time)+' · ':''}${roleTxt(r)}${r.with?' · with '+esc(nameOf(r.with)):''}${r.note?' · '+esc(r.note):''}</small></div>${chip(true,'✓ '+(r.at?hhmm(r.at):'Sent'))}</div>`).join('')}</div>`:'';
+        let body=ap.length?`<div class="tasks">${ap.map((r,i)=>`<div class="task"><div><b>Appointment ${i+1} · ${esc(r.client)}</b><small>${[r.time?esc(r.time):'',r.note?esc(r.note):''].filter(Boolean).join(' \u00b7 ')||'\u2713 Logged'}</small></div>${chip(true,'✓ '+(r.at?hhmm(r.at):'Sent'))}</div>`).join('')}</div>`:'';
         if(live&&beforeTen){ body+='<p class="note" style="margin:0">Appointments open at 10:00am.</p>'; }
         else if(live){
           const r=D.appts[0], others=Object.keys(roster).filter(x=>x!==id).sort((x,y)=>roster[x].name.localeCompare(roster[y].name));
           body+=`<div class="label" style="margin:${ap.length?'12px':'0'} 0 6px">Appointment ${n}</div>
-          <div class="apptbox"><div class="appt"><input type="time" id="at-0" data-a="0" data-f="time" value="${esc(r.time)}" aria-label="Appointment ${n} time"><input type="text" id="ac-0" data-a="0" data-f="client" value="${esc(r.client)}" placeholder="Client name" aria-label="Appointment ${n} client"><input type="text" id="an-0" data-a="0" data-f="note" value="${esc(r.note)}" placeholder="Unit / project / purpose" aria-label="Appointment ${n} details"></div>
-            <div class="appt2"><select id="ar-0" data-a="0" data-f="role" aria-label="My part">${Object.entries(ROLE).map(([k,v])=>`<option value="${k}"${r.role===k?' selected':''}>My part: ${v.l} (${nfmt(v.u)})</option>`).join('')}</select><select id="aw-0" data-a="0" data-f="with" aria-label="With whom"><option value="">${r.role==='both'?'With: no one':'With whom? (optional)'}</option>${others.map(x=>`<option value="${esc(x)}"${r.with===x?' selected':''}>With: ${esc(roster[x].name)}</option>`).join('')}<option value="other"${r.with==='other'?' selected':''}>With: someone outside MADROX</option></select></div></div>
-          <p class="note" style="margin:6px 0 0">Your part: <b>Setter</b> = 0.5, <b>Attendee</b> = 0.5, <b>Set &amp; met</b> = 1. Log every appointment, as many as you have. 2 a day count for marks. Open until 11:59pm.</p>
+          <div class="apptbox"><div class="appt"><input type="time" id="at-0" data-a="0" data-f="time" value="${esc(r.time)}" aria-label="Appointment ${n} time"><input type="text" id="ac-0" data-a="0" data-f="client" value="${esc(r.client)}" placeholder="Client name" aria-label="Appointment ${n} client"><input type="text" id="an-0" data-a="0" data-f="note" value="${esc(r.note)}" placeholder="Project / details" aria-label="Appointment ${n} details"></div>
+            </div>
+          <p class="note" style="margin:6px 0 0">Every appointment = 1. You need at least 2 a day for marks. Add more any time; they\u2019re saved for your records. Open until 11:59pm.</p>
           <button class="btn big" id="apYes" style="margin-top:10px" ${dis}>Submit appointment ${n}</button>
           <p class="note" style="margin:4px 0 0">Saved straight away. You can\u2019t change it after.</p>`;
         } else if(!ap.length) body+='<p class="note" style="margin:0">No appointments this day.</p>';
@@ -789,7 +789,7 @@ body{margin:0}
       rows+=`<tr><td>${d} ${DOW[dow(d)]}</td>
         <td>${isWeekday(d)?chip(c.qr,c.qr?'✓':'✗')+' ':''}${attCell}${!c.qr&&isWeekday(d)?` <button class="link" data-mark="${d}">Mark attended</button>`:''}${isWeekday(d)?` <button class="link" data-attedit="${d}" data-who="${esc(revWho)}">Edit times</button>`:''} <button class="link" data-edopen="${d}" data-who="${esc(revWho)}">Edit day</button>${a.edited?' <span class="note">(edited)</span>':''}</td>
         <td>${v?`${chip(c.video,hhmm(v.at))} ${fileBtn(v.file,'Watch')}`:'–'}</td>
-        <td style="white-space:normal">${e?(e.appts||[]).filter(r=>r.client).map(r=>`${esc(r.time||'')} ${esc(r.client)} <span class="note">(${roleTxt(r)}${r.with?', with '+esc(nameOf(r.with)):''})</span>${r.note?' · '+esc(r.note):''}`).join('<br>')||'–':'–'}</td>
+        <td style="white-space:normal">${e?(e.appts||[]).filter(r=>r.client).map(r=>`${esc(r.time||'')} ${esc(r.client)}${r.note?' · '+esc(r.note):''}`).join('<br>')||'–':'–'}</td>
         <td>${e?link(e.reel):'–'}</td></tr>`;
       if(attEdit===revWho+'|'+d) rows+=`<tr><td colspan="5">${attEditor(revWho,d)}</td></tr>`;
       if(recEdit===revWho+'|'+d) rows+=`<tr><td colspan="5" style="white-space:normal">${recEditor(revWho,d)}</td></tr>`;
@@ -828,7 +828,7 @@ body{margin:0}
     if(edMsg) h+=`<div class="banner" style="margin:6px 0;${edMsg.ok?'background:var(--good-soft);color:var(--good)':''}">${esc(edMsg.text)}</div>`;
     if(wd&&!mc) h+=`<div class="edsec"><h4>Sign in / sign out</h4><div class="edrow"><input type="time" id="ed-in" value="${esc(edV('ed-in',a.in?hhmm(a.in):''))}" aria-label="Sign in"><input type="time" id="ed-out" value="${esc(edV('ed-out',a.out?hhmm(a.out):''))}" aria-label="Sign out">${btn('att','Save')}</div><span class="xs">Empty sign-in = clear the day. Counts when sign in is 9:45\u201310:00am and sign out by 11:59pm.</span></div>`;
     if(!mc) h+=`<div class="edsec"><h4>Learning video</h4><div class="edrow"><input type="time" id="ed-vid" value="${esc(edV('ed-vid',v&&v.at?hhmm(v.at):''))}" aria-label="Video time">${btn('video','Save')}</div><span class="xs">Empty = clear. Counts when the time is 9:00\u201310:00am.</span></div>`;
-    if(!mc) h+=`<div class="edsec"><h4>Appointments</h4>${edAppts.map((r,i)=>`<div class="edrow"><input type="time" data-ei="${i}" data-ef="time" value="${esc(r.time||'')}" aria-label="Time"><input type="text" data-ei="${i}" data-ef="client" value="${esc(r.client||'')}" placeholder="Client"><input type="text" data-ei="${i}" data-ef="note" value="${esc(r.note||'')}" placeholder="Details"><select data-ei="${i}" data-ef="role">${Object.entries(ROLE).map(([kk,vv])=>`<option value="${kk}"${(r.role||'both')===kk?' selected':''}>${vv.l} (${nfmt(vv.u)})</option>`).join('')}</select><select data-ei="${i}" data-ef="with"><option value="">With: no one</option>${others.map(x=>`<option value="${esc(x)}"${r.with===x?' selected':''}>${esc(roster[x].name)}</option>`).join('')}<option value="other"${r.with==='other'?' selected':''}>Outside MADROX</option></select><button class="link" data-edrm="${i}">Remove</button></div>`).join('')||'<span class="xs">No appointments.</span>'}
+    if(!mc) h+=`<div class="edsec"><h4>Appointments</h4>${edAppts.map((r,i)=>`<div class="edrow"><input type="time" data-ei="${i}" data-ef="time" value="${esc(r.time||'')}" aria-label="Time"><input type="text" data-ei="${i}" data-ef="client" value="${esc(r.client||'')}" placeholder="Client"><input type="text" data-ei="${i}" data-ef="note" value="${esc(r.note||'')}" placeholder="Details"><button class="link" data-edrm="${i}">Remove</button></div>`).join('')||'<span class="xs">No appointments.</span>'}
       <div class="edrow">${'<button class="btn ghost" data-edaddappt="1">+ Add appointment</button>'}${btn('appts','Save appointments')}</div></div>`;
     if(wd&&!mc) h+=`<div class="edsec"><h4>Reel link</h4><div class="edrow"><input type="url" id="ed-reel" value="${esc(edV('ed-reel',e.reel||''))}" placeholder="https://… (empty = clear)">${btn('reel','Save')}</div></div>`;
     if(wk) h+=`<div class="edsec"><h4>YouTube \u00b7 ${WEEKS[wk-1][0]}\u2013${WEEKS[wk-1][1]} Oct</h4><div class="edrow"><input type="url" id="ed-yt" value="${esc(edV('ed-yt',y&&y.url||''))}" placeholder="https://… (empty = clear)">${btn('yt','Save')}</div></div>`;
@@ -918,7 +918,7 @@ body{margin:0}
       const attOut=a.admin?'':a.out?hhmm(a.out)+(s==='ok'?' <span class="ok">✓ counted</span>':' <span class="bad">not counted</span>'):a.in?'<span class="bad">Not signed out – no marks</span>':'<span class="note">–</span>';
       const vidTxt=v?`${hhmm(v.at)} ${c.video?'<span class="ok">✓</span>':'<span class="bad">outside 9–10am</span>'} ${fileBtn(v.file,'Watch')}`:'<span class="note">–</span>';
       const ap=e?(e.appts||[]).filter(x=>x&&String(x.client||'').trim()):[];
-      const apTxt=ap.length?ap.map((x,i)=>`<div>${i+1}. ${x.time?esc(x.time)+' · ':''}<b>${esc(x.client)}</b>${x.note?' · '+esc(x.note):''} <span class="xs">${roleTxt(x)}${x.with?', with '+esc(nameOf(x.with)):''}</span></div>`).join('')+(e.at?`<span class="xs">sent ${hhmm(e.at)}</span>`:''):'<span class="note">not submitted</span>';
+      const apTxt=ap.length?ap.map((x,i)=>`<div>${i+1}. ${x.time?esc(x.time)+' · ':''}<b>${esc(x.client)}</b>${x.note?' · '+esc(x.note):''}</div>`).join('')+(e.at?`<span class="xs">sent ${hhmm(e.at)}</span>`:''):'<span class="note">not submitted</span>';
       const mark=recEdit===id+'|'+upDay?recEditor(id,upDay):(wd&&attEdit===id+'|'+upDay?attEditor(id,upDay):`<div class="row" style="gap:14px">${wd&&!c.qr?`<button class="link" data-mark="${upDay}" data-who="${esc(id)}">Mark attended</button>`:''}${wd?`<button class="link" data-attedit="${upDay}" data-who="${esc(id)}">Edit times</button>`:''}<button class="link strong" data-edopen="${upDay}" data-who="${esc(id)}">\u270e Edit day</button></div>`);
       return `<div class="upcard${s==='noout'?' warn':''}">${head}
         <dl class="rec">
@@ -949,12 +949,12 @@ body{margin:0}
     out.push('SCORES'); out.push(line(['Agent','Area','Team','Group','Role','KPI 1 (/50)','KPI 2 (/50)','Total (/100)','Attendance days','Appointments','Reels','Learning video days','YouTube weeks','Booking credits','MC days']));
     ids.forEach(id=>{const s=score(dataOf(id),id); out.push(line([...base(id),f1(s.kpi1),f1(s.kpi2),f1(s.kpi1+s.kpi2),s.done.qr,s.done.appt,s.done.reel,s.done.video,s.done.yt,s.sales,s.mc]));});
     out.push(''); out.push('DAILY RECORDS');
-    out.push(line(['Date','Day','Agent','Area','Team','Group','Status','Sign in','Sign out','Attendance counted','Learning video','Video counted','Appointments counted','Appt 1 time','Appt 1 client','Appt 1 part','Appt 1 with','Appt 1 note','Appt 2 time','Appt 2 client','Appt 2 part','Appt 2 with','Appt 2 note','Appt 3','Appt 4','Report sent','Reel link','MC reason']));
+    out.push(line(['Date','Day','Agent','Area','Team','Group','Status','Sign in','Sign out','Attendance counted','Learning video','Video counted','Appointments counted','Appointments logged','Appt 1 time','Appt 1 client','Appt 1 details','Appt 2 time','Appt 2 client','Appt 2 details','More appointments','Report sent','Reel link','MC reason']));
     const ST={ok:'Present',noout:'Signed in, no sign-out',late:'Outside hours',none:'Not signed in',mc:'MC'};
     for(let d=1;d<=last;d++) ids.forEach(id=>{const p=dataOf(id), k=key(d), a=(p.att||{})[k]||{}, v=(p.vid||{})[k], e=(p.days||{})[k]||{}, c=dayChecks(p,d), s=attStatus(p,d);
-      const ap=(e.appts||[]).filter(x=>x&&String(x.client||'').trim()); const A=i=>ap[i]?[ap[i].time||'',ap[i].client,roleTxt(ap[i]),ap[i].with?nameOf(ap[i].with):'',ap[i].note||'']:['','','','',''];
-      const X=i=>ap[i]?`${ap[i].client} (${roleTxt(ap[i])}${ap[i].with?', with '+nameOf(ap[i].with):''})`:'';
-      out.push(line([d+' Oct',DOW[dow(d)],...base(id).slice(0,4),ST[s],a.admin?'marked by admin':a.in?hhmm(a.in):'',a.out?hhmm(a.out):'',c.mc?'':c.qr?'Yes':'No',v?hhmm(v.at):'',c.mc?'':c.video?'Yes':'No',c.mc?'':nfmt(c.appt),...A(0),...A(1),X(2),X(3),e.at&&!e.mc?hhmm(e.at):'',e.reel||'',e.mc?e.reason||'':'']));});
+      const ap=(e.appts||[]).filter(x=>x&&String(x.client||'').trim()); const A=i=>ap[i]?[ap[i].time||'',ap[i].client,ap[i].note||'']:['','',''];
+      const MORE=ap.slice(2).map(x=>[x.time,x.client,x.note].filter(Boolean).join(' / ')).join(' | ');
+      out.push(line([d+' Oct',DOW[dow(d)],...base(id).slice(0,4),ST[s],a.admin?'marked by admin':a.in?hhmm(a.in):'',a.out?hhmm(a.out):'',c.mc?'':c.qr?'Yes':'No',v?hhmm(v.at):'',c.mc?'':c.video?'Yes':'No',c.mc?'':nfmt(c.appt),ap.length,...A(0),...A(1),MORE,e.at&&!e.mc?hhmm(e.at):'',e.reel||'',e.mc?e.reason||'':'']));});
     out.push(''); out.push('BOOKINGS'); out.push(line(['Date','Time added','Agent','Area','Team','Group','Project / unit','How many','Part','With','Credit','Status']));
     ids.forEach(id=>bookingsOf(dataOf(id)).sort((A,B)=>(A[1].day||0)-(B[1].day||0)).forEach(([,x])=>out.push(line([x.day+' Oct',x.at?hhmm(x.at):'',...base(id).slice(0,4),x.note||'',cnt(x),partTxt(x),x.with||'',nfmt(cnt(x)*ownShare(x)),x.cancelled?'Cancelled':'Valid']))));
     out.push(''); out.push('YOUTUBE'); out.push(line(['Agent','Area','Team','Group',...WEEKS.map((w,i)=>`Week ${i+1} (${w[0]}-${w[1]} Oct)`)]));
@@ -1031,7 +1031,7 @@ body{margin:0}
       if(day!==today()){ ui.apMsg={ok:false,text:'You can only add appointments for today.'}; renderDayView(); return; }
       if(!openFor('main')){ ui.apMsg={ok:false,text:'Appointments are open from 10:00am to 11:59pm.'}; renderDayView(); return; }
       const k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
-      const item={time:r.time,client:r.client.trim(),note:r.note.trim(),role:r.role||'both',with:r.with||''}, n=(cur.appts||[]).length+1;
+      const item={time:r.time,client:r.client.trim(),note:r.note.trim(),role:'both',with:''}, n=(cur.appts||[]).length+1;
       const ok=await act('appt',item,{days:{[k]:{appts:[...(cur.appts||[]),{...item,at:now()}],reel:cur.reel||'',at:cur.at||now()}}},`Appointment ${n} saved`);
       ui.apMsg=ok?{ok:true,text:`\u2713 Appointment ${n} saved`}:{ok:false,text:'Not saved: '+lastActErr+' Please try again or tell Alicia.'};
       renderDayView(); return; }
