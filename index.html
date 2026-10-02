@@ -173,6 +173,13 @@ body{margin:0}
 .edrow input[type=text],.edrow input[type=url]{flex:1 1 140px}
 .edpanel{display:grid;gap:4px;padding:12px;border:2px solid var(--accent);border-radius:12px;background:var(--bg)}
 .atted .note{flex:1 1 100%;margin:0;font-size:12px}
+.artbl td,.artbl th{text-align:center;white-space:nowrap;padding:6px 8px}
+.artbl td:first-child,.artbl th:first-child{text-align:left;position:sticky;left:0;background:var(--panel)}
+.artbl small{display:block;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.artbl .a-ok{color:var(--good);font-weight:700}
+.artbl .a-bad{color:var(--accent);font-weight:700}
+.artbl .a-mid{color:var(--muted);font-weight:700}
+.artbl tr.grp td{text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
 .upcard.warn{border-color:var(--accent)}
 .rec{display:grid;grid-template-columns:108px 1fr;gap:6px 10px;margin:0;font-size:14px}
 .rec dt{color:var(--muted);font-size:12px;font-weight:600;padding-top:2px}
@@ -211,6 +218,7 @@ body{margin:0}
     <button role="tab" id="t-board" aria-selected="false" data-tab="board" class="adm" hidden>Leaderboard</button>
     <button role="tab" id="t-team" aria-selected="false" data-tab="team" class="adm" hidden>Teams &amp; rules</button>
     <button role="tab" id="t-uploads" aria-selected="false" data-tab="uploads" class="adm" hidden>Daily records</button>
+    <button role="tab" id="t-attrec" aria-selected="false" data-tab="attrec" class="adm" hidden>Attendance</button>
     <button role="tab" id="t-review" aria-selected="false" data-tab="review" class="adm" hidden>Review</button>
     <button role="tab" id="t-rules" aria-selected="false" data-tab="rules" class="agt">How marks work</button>
   </nav>
@@ -291,6 +299,26 @@ body{margin:0}
       <p class="note" style="margin:6px 0 0">Every booking entry from 1 October to today (follows the area filter). Each person logs their own part and %, so one deal can appear several times. The %s for one deal should add up to 100. Mark an entry cancelled if it’s wrong or the deal falls through.</p>
       <div class="tbl" style="margin-top:10px" id="bkAll"></div>
     </div>
+  </section>
+
+  <!-- ATTENDANCE RECORD (admin) -->
+  <section id="attrec" class="stack" hidden>
+    <div class="panel stack">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <div><span class="label">Back office</span><h2 style="margin:0">Attendance record</h2></div>
+        <div class="row"><button class="btn ghost" id="arRefresh">↻ Refresh</button><button class="btn ghost" id="arCsv">⬇ Download attendance (Excel)</button></div>
+      </div>
+      <div class="row" id="arFilter"></div>
+      <p class="note" style="margin:0">Every agent, every working day (Monday to Friday). <b>✓</b> = signed in 9:45–10:00am and signed out. <b>No out</b> = signed in on time but no sign-out yet. <b>Late</b> = signed in outside 9:45–10:00am. <b>✗</b> = no sign-in. Only ✓ days count for marks.</p>
+    </div>
+    <div class="panel stack">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <h2 style="margin:0">Daily summary</h2>
+        <div class="row"><select id="arDay" class="field" style="width:auto" aria-label="Day"></select><button class="btn" id="arCopy">Copy summary</button></div>
+      </div>
+      <textarea id="arText" rows="9" readonly style="font-family:inherit;line-height:1.5"></textarea>
+    </div>
+    <div class="panel"><div class="tbl" id="arTable"></div></div>
   </section>
 
   <!-- REVIEW (admin) -->
@@ -963,6 +991,59 @@ body{margin:0}
     const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=`MADROX-records-${t}Oct.csv`; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
   }
 
+  // ---------- attendance record (back office) ----------
+  let arArea='All', arDay=0;
+  const arDays=()=>{ const t=Math.min(DAYS,Math.max(1,today())), last=clock.test?DAYS:t, out=[]; for(let d=1;d<=last;d++) if(isWeekday(d)) out.push(d); return out; };
+  // per agent/day: status + times
+  function arCell(id,d){ const p=dataOf(id), a=(p.att||{})[key(d)]||{}, st=attStatus(p,d);
+    return {st, in:a.in?hhmm(a.in):'', out:a.out?hhmm(a.out):'', admin:!!a.admin}; }
+  const AR_TXT={ok:'Present',noout:'Signed in, no sign-out',late:'Late / outside hours',none:'Absent',mc:'MC'};
+  function arSummary(d){
+    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea)), g={ok:[],noout:[],late:[],none:[],mc:[]};
+    ids.forEach(id=>{ const c=arCell(id,d); (g[c.st]||g.none).push(roster[id].name+(c.st==='late'&&c.in?' ('+c.in+')':'')); });
+    const on=g.ok.length+g.noout.length, L=[];
+    L.push(`MADROX attendance \u00b7 ${DOW[dow(d)]} ${d} Oct 2026`+(arArea==='All'?'':' \u00b7 '+arArea));
+    L.push(`Signed in on time (9:45\u201310:00am): ${on} of ${ids.length}`);
+    L.push(`Signed out as well: ${g.ok.length}`+(g.noout.length?` \u00b7 No sign-out yet: ${g.noout.length} (${g.noout.join(', ')})`:''));
+    L.push(`Late: ${g.late.length}`+(g.late.length?' \u2013 '+g.late.join(', '):''));
+    L.push(`Absent: ${g.none.length}`+(g.none.length?' \u2013 '+g.none.join(', '):''));
+    L.push(`MC: ${g.mc.length}`+(g.mc.length?' \u2013 '+g.mc.join(', '):''));
+    return L.join('\n');
+  }
+  function renderAttRec(){
+    if(!isAdmin) return;
+    const days=arDays(); if(!days.length){ $('arTable').innerHTML='<p class="note" style="margin:0">Attendance starts on Thursday 1 October.</p>'; $('arText').value=''; return; }
+    if(!days.includes(arDay)) arDay=days[days.length-1];
+    $('arFilter').innerHTML=['All'].concat(AREAS).map(a=>`<button class="fchip${a===arArea?' on':''}" data-area="${esc(a)}">${esc(a)}</button>`).join('');
+    const sel=$('arDay'); if(document.activeElement!==sel) sel.innerHTML=days.map(d=>`<option value="${d}"${d===arDay?' selected':''}>${DOW[dow(d)]} ${d} Oct</option>`).join('');
+    if(document.activeElement!==$('arText')) $('arText').value=arSummary(arDay);
+    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea));
+    const tot=days.map(()=>0); let rows='', lastG='';
+    ids.forEach(id=>{ const r=roster[id], gk=`${r.area} \u00b7 Team ${r.team} \u00b7 ${r.group}\u2019s group`;
+      if(gk!==lastG){ rows+=`<tr class="grp"><td colspan="${days.length+2}">${esc(gk)}</td></tr>`; lastG=gk; }
+      let ok=0, work=0;
+      const tds=days.map((d,i)=>{ const c=arCell(id,d); if(c.st!=='mc') work++; if(c.st==='ok'){ok++;tot[i]++;}
+        if(c.st==='mc') return '<td class="a-mid">MC</td>';
+        if(c.st==='ok') return `<td class="a-ok">\u2713<small>${c.admin?'marked':c.in+'\u2013'+c.out}</small></td>`;
+        if(c.st==='noout') return `<td class="a-mid">No out<small>in ${c.in}</small></td>`;
+        if(c.st==='late') return `<td class="a-bad">Late<small>${c.in}${c.out?'\u2013'+c.out:''}</small></td>`;
+        return '<td class="a-bad">\u2717</td>'; }).join('');
+      rows+=`<tr><td><b>${esc(r.name)}</b></td>${tds}<td class="n"><b>${ok}/${work}</b></td></tr>`; });
+    $('arTable').innerHTML=`<table class="artbl"><thead><tr><th>Agent</th>${days.map(d=>`<th>${DOW[dow(d)]}<br>${d} Oct</th>`).join('')}<th>Counted</th></tr></thead><tbody>${rows}</tbody>
+      <tfoot><tr><td><b>Counted (\u2713) per day</b></td>${tot.map(n=>`<td><b>${n}/${ids.length}</b></td>`).join('')}<td></td></tr></tfoot></table>`;
+  }
+  function downloadAttendance(){
+    const q=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}, line=a=>a.map(q).join(',');
+    const days=arDays(), ids=sortIds(Object.keys(roster)), out=[];
+    out.push('ATTENDANCE SUMMARY'); out.push(line(['Agent','Area','Team','Group','Role',...days.map(d=>DOW[dow(d)]+' '+d+' Oct'),'Days counted','Working days']));
+    ids.forEach(id=>{ const r=roster[id]; let ok=0, work=0; const cells=days.map(d=>{ const c=arCell(id,d); if(c.st!=='mc') work++; if(c.st==='ok') ok++; return AR_TXT[c.st]||''; });
+      out.push(line([r.name,r.area,r.team,r.group,r.role,...cells,ok,work])); });
+    out.push(''); out.push('ATTENDANCE DETAIL'); out.push(line(['Date','Day','Agent','Area','Team','Group','Sign in','Sign out','Status','Counted for marks']));
+    days.forEach(d=>ids.forEach(id=>{ const r=roster[id], c=arCell(id,d); out.push(line([d+' Oct',DOW[dow(d)],r.name,r.area,r.team,r.group,c.admin?'marked by admin':c.in,c.out,AR_TXT[c.st]||'',c.st==='mc'?'':c.st==='ok'?'Yes':'No'])); }));
+    const blob=new Blob(['\ufeff'+out.join('\r\n')],{type:'text/csv;charset=utf-8'});
+    const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=`MADROX-attendance-to-${days[days.length-1]||1}Oct.csv`; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
+  }
+
   function renderPoster(){ $('appLink').textContent=APP_URL.replace('#attend',''); }
   function renderTabs(){
     document.querySelectorAll('nav .adm').forEach(b=>b.hidden=!isAdmin);
@@ -972,11 +1053,11 @@ body{margin:0}
     if(cur&&cur.hidden) showTab('checkin');
   }
   function render(){
-    renderId();renderDays();renderDayView();renderYT();renderSales();renderMine();renderBoard();renderReview();renderUploads();renderTeam();renderTabs();renderPoster();
+    renderId();renderDays();renderDayView();renderYT();renderSales();renderMine();renderBoard();renderReview();renderUploads();renderAttRec();renderTeam();renderTabs();renderPoster();
   }
 
   // ---------- events ----------
-  function showTab(tab){document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===tab));['checkin','board','team','uploads','review','rules','adminLogin'].forEach(t=>$(t).hidden=t!==tab);}
+  function showTab(tab){document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===tab));['checkin','board','team','uploads','attrec','review','rules','adminLogin'].forEach(t=>$(t).hidden=t!==tab);}
   document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]'); if(b) showTab(b.dataset.tab);});
 
   $('idBox').addEventListener('change',e=>{
@@ -1088,6 +1169,12 @@ body{margin:0}
   $('upPrev').addEventListener('click',()=>{upDay=Math.max(1,upDay-1);renderUploads();});
   $('upNext').addEventListener('click',()=>{upDay=Math.min(DAYS,upDay+1);renderUploads();});
   $('upFilter').addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(!b)return;upArea=b.dataset.area;renderUploads();});
+  $('arFilter').addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(!b)return;arArea=b.dataset.area;renderAttRec();});
+  $('arDay').addEventListener('change',e=>{arDay=+e.target.value;renderAttRec();});
+  $('arRefresh').addEventListener('click',async()=>{ flash('Refreshing\u2026',true); await loadAdmin(); flash('Up to date'); });
+  $('arCsv').addEventListener('click',downloadAttendance);
+  $('arCopy').addEventListener('click',()=>{ const ta=$('arText'), b=$('arCopy'); const done=()=>{b.textContent='Copied \u2713'; setTimeout(()=>b.textContent='Copy summary',2000);};
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(ta.value):Promise.reject()).then(done,()=>{ ta.focus(); ta.select(); try{document.execCommand('copy');done();}catch(_){ b.textContent='Select and copy the text'; } }); });
   $('upStatus').addEventListener('click',e=>{const b=e.target.closest('[data-stat]');if(!b)return;upStat=b.dataset.stat;renderUploads();});
   $('upRefresh').addEventListener('click',async()=>{ flash('Refreshing\u2026',true); await loadAdmin(); flash('Up to date'); });
   $('upCsv').addEventListener('click',downloadAll);
