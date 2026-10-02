@@ -173,6 +173,39 @@ body{margin:0}
 .edrow input[type=text],.edrow input[type=url]{flex:1 1 140px}
 .edpanel{display:grid;gap:4px;padding:12px;border:2px solid var(--accent);border-radius:12px;background:var(--bg)}
 .atted .note{flex:1 1 100%;margin:0;font-size:12px}
+/* attendance report (image-ready) */
+.arwrap{overflow-x:auto}
+.arr{background:#fff;color:#15181d;padding:28px;border-radius:10px;min-width:680px;font-family:Inter,Archivo,Arial,Helvetica,sans-serif;line-height:1.35}
+.arr .eb{font-size:12px;font-weight:700;letter-spacing:.14em;color:#1f5f8b;text-transform:uppercase}
+.arr h3{font-size:38px;font-weight:800;margin:2px 0 4px;letter-spacing:-.01em;text-transform:none;color:#15181d;font-family:inherit}
+.arr .sub{color:#5b6470;font-size:15px;text-transform:none;letter-spacing:0;font-weight:400}
+.arr .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:20px 0 22px}
+.arr .card{background:#f1f3f7;border-radius:8px;padding:16px 18px}
+.arr .card .d{font-size:12px;font-weight:700;letter-spacing:.1em;color:#4b5563;text-transform:uppercase}
+.arr .card .n{font-size:46px;font-weight:800;color:#1f5f8b;line-height:1.05}
+.arr .card .n small{font-size:15px;color:#15181d;font-weight:600;margin-left:6px}
+.arr .card .s{font-size:13px;color:#374151;margin-top:4px}
+.arr .cols{column-count:2;column-gap:28px}
+.arr.wide .cols{column-count:1}
+.arr .blk{break-inside:avoid;margin:0 0 18px}
+.arr table{width:100%;border-collapse:collapse;font-size:14px}
+.arr th{font-size:11px;font-weight:700;color:#4b5563;letter-spacing:.04em;text-transform:uppercase;padding:4px 3px;text-align:center;border-bottom:2px solid #15181d;background:none}
+.arr th.g{text-align:left;font-size:15px;color:#15181d;text-transform:none;letter-spacing:0}
+.arr td{padding:5px 3px;border-bottom:1px solid #e3e6eb;text-align:center;background:none}
+.arr td.nm{text-align:left;white-space:nowrap;padding-right:8px}
+.arr .pl{display:block;font-size:11.5px;font-weight:700;border-radius:4px;padding:5px 4px;white-space:nowrap;min-width:54px}
+.arr .p-ok{background:#1f5f8b;color:#fff}
+.arr .p-noout{background:#fbe6ad;color:#3b2f06}
+.arr .p-late{background:#e3e5ea;color:#2d3340}
+.arr .p-none{background:#fff;color:#b3261e;box-shadow:inset 0 0 0 1.5px #d9534f}
+.arr .p-mc{background:#fff;color:#4b5563;box-shadow:inset 0 0 0 1.5px #9aa3af}
+.arr .box{break-inside:avoid;border:2px solid #15181d;border-radius:8px;padding:16px 18px;margin:4px 0 18px}
+.arr .box b{display:block;font-size:15px;margin-top:10px}
+.arr .box b:first-child{margin-top:0}
+.arr .box p{margin:2px 0 0;font-size:13px;color:#374151}
+.arr .box .red{color:#b3261e}
+.arr .ft{border-top:1px solid #e3e6eb;margin-top:6px;padding-top:10px;font-size:12px;color:#5b6470}
+@media (max-width:720px){.arr{min-width:0;padding:16px}.arr h3{font-size:27px}.arr .cols{column-count:1}.arr .card .n{font-size:38px}.arr .blk{overflow-x:auto}.arr .pl{min-width:46px;font-size:11px}.arr td.nm{white-space:normal}}
 .artbl td,.artbl th{text-align:center;white-space:nowrap;padding:6px 8px}
 .artbl td:first-child,.artbl th:first-child{text-align:left;position:sticky;left:0;background:var(--panel)}
 .artbl small{display:block;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -218,7 +251,7 @@ body{margin:0}
     <button role="tab" id="t-board" aria-selected="false" data-tab="board" class="adm" hidden>Leaderboard</button>
     <button role="tab" id="t-team" aria-selected="false" data-tab="team" class="adm" hidden>Teams &amp; rules</button>
     <button role="tab" id="t-uploads" aria-selected="false" data-tab="uploads" class="adm" hidden>Daily records</button>
-    <button role="tab" id="t-attrec" aria-selected="false" data-tab="attrec" class="adm" hidden>Attendance</button>
+    <button role="tab" id="t-attrec" aria-selected="false" data-tab="attrec">Attendance</button>
     <button role="tab" id="t-review" aria-selected="false" data-tab="review" class="adm" hidden>Review</button>
     <button role="tab" id="t-rules" aria-selected="false" data-tab="rules" class="agt">How marks work</button>
   </nav>
@@ -305,20 +338,28 @@ body{margin:0}
   <section id="attrec" class="stack" hidden>
     <div class="panel stack">
       <div class="row" style="justify-content:space-between;align-items:flex-end">
-        <div><span class="label">Back office</span><h2 style="margin:0">Attendance record</h2></div>
-        <div class="row"><button class="btn ghost" id="arRefresh">↻ Refresh</button><button class="btn ghost" id="arCsv">⬇ Download attendance (Excel)</button></div>
+        <div><span class="label" id="arEyebrow">Team</span><h2 style="margin:0">Attendance record</h2></div>
+        <div class="row"><button class="btn ghost" id="arRefresh">↻ Refresh</button><button class="btn ghost" id="arCsv" hidden>⬇ Download attendance (Excel)</button></div>
       </div>
       <div class="row" id="arFilter"></div>
       <p class="note" style="margin:0">Every agent, every working day (Monday to Friday). <b>✓</b> = signed in 9:45–10:00am and signed out. <b>No out</b> = signed in on time but no sign-out yet. <b>Late</b> = signed in outside 9:45–10:00am. <b>✗</b> = no sign-in. Only ✓ days count for marks.</p>
     </div>
     <div class="panel stack">
       <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <h2 style="margin:0">Attendance update</h2>
+        <div class="row"><select id="arFrom" class="field" style="width:auto" aria-label="From day"></select><span class="note">to</span><select id="arTo" class="field" style="width:auto" aria-label="To day"></select><button class="btn" id="arImg">Save as image</button></div>
+      </div>
+      <p class="note" style="margin:0" id="arImgNote">Pick the days. Tap Save as image to keep or share it.</p>
+      <div class="arwrap"><div id="arReport" class="arr"></div></div>
+    </div>
+    <div class="panel stack" id="arSumPanel" hidden>
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
         <h2 style="margin:0">Daily summary</h2>
         <div class="row"><select id="arDay" class="field" style="width:auto" aria-label="Day"></select><button class="btn" id="arCopy">Copy summary</button></div>
       </div>
       <textarea id="arText" rows="9" readonly style="font-family:inherit;line-height:1.5"></textarea>
     </div>
-    <div class="panel"><div class="tbl" id="arTable"></div></div>
+    <div class="panel" id="arTblPanel" hidden><div class="tbl" id="arTable"></div></div>
   </section>
 
   <!-- REVIEW (admin) -->
@@ -501,7 +542,7 @@ body{margin:0}
   let sb=null, clock={day:0,test:false,now:Date.now(),at:Date.now()}, busy=false;
   let roster={}, me=null, myState=null;      // agent session
   let isAdmin=false, allStates={}, pins={}, phones={};   // back office
-  let myCredits=[], practice=false, pData={}, pMe=null, pClock=630;
+  let teamAtt={}, teamAttAt=0, myCredits=[], practice=false, pData={}, pMe=null, pClock=630;
   let draft=null, ui={}, revWho='', loginPick='';
   let day=1;
 
@@ -515,7 +556,7 @@ body{margin:0}
   const inR=(t,a,b)=>{const m=minsKL(t);return m>=a&&m<b};
   function setClock(c){ if(c){clock={...c,at:Date.now()};} }
   function myAgent(){ return practice?pMe:(me&&me.id); }
-  function dataOf(id){ if(practice) return pData[id]||{}; if(me&&id===me.id&&myState) return myState; return allStates[id]||{}; }
+  function dataOf(id){ if(practice) return pData[id]||{}; if(me&&id===me.id&&myState) return myState; return allStates[id]||teamAtt[id]||{}; }
 
   // ---------- scoring ----------
   function dayChecks(p,d){
@@ -1010,10 +1051,117 @@ body{margin:0}
     L.push(`MC: ${g.mc.length}`+(g.mc.length?' \u2013 '+g.mc.join(', '):''));
     return L.join('\n');
   }
+  let arFrom=0, arTo=0;
+  const AR_PILL={ok:'Present',noout:'No sign-out',late:'Late',none:'Absent',mc:'MC'}, AR_SHORT={ok:'\u2713',noout:'No out',late:'Late',none:'\u2717',mc:'MC'};
+  function renderAttReport(days){
+    if(!days.includes(arTo)) arTo=days[days.length-1];
+    if(!days.includes(arFrom)||arFrom>arTo) arFrom=days[Math.max(0,days.indexOf(arTo)-1)];
+    const opt=(v)=>days.map(d=>`<option value="${d}"${d===v?' selected':''}>${DOW[dow(d)]} ${d} Oct</option>`).join('');
+    if(document.activeElement!==$('arFrom')) $('arFrom').innerHTML=opt(arFrom);
+    if(document.activeElement!==$('arTo')) $('arTo').innerHTML=opt(arTo);
+    const R=days.filter(d=>d>=arFrom&&d<=arTo), many=R.length>3, lab=many?AR_SHORT:AR_PILL;
+    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea)), N=ids.length;
+    const cards=R.map(d=>{ const c={ok:0,noout:0,late:0,none:0,mc:0}; ids.forEach(id=>c[arCell(id,d).st]++);
+      const sub=[[c.none,'absent'],[c.noout,'no sign-out'],[c.late,'late'],[c.mc,'MC']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' \u00b7 ')||'Everyone present';
+      return `<div class="card"><div class="d">${DOW[dow(d)]} ${d} Oct</div><div class="n">${c.ok}<small>of ${N} present</small></div><div class="s">${sub}</div></div>`; }).join('');
+    const teams={}; ids.forEach(id=>{ const r=roster[id], k=`${r.area} \u00b7 Team ${r.team}`; (teams[k]=teams[k]||[]).push(id); });
+    const blocks=Object.entries(teams).map(([k,list])=>`<div class="blk"><table><thead><tr><th class="g">${esc(k)}</th>${R.map(d=>`<th>${DOW[dow(d)]} ${d}</th>`).join('')}</tr></thead><tbody>${
+      list.map(id=>`<tr><td class="nm">${esc(roster[id].name)}</td>${R.map(d=>{const st=arCell(id,d).st;return `<td><span class="pl p-${st}">${lab[st]}</span></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`).join('');
+    const all=[],some=[],zero=[]; ids.forEach(id=>{ let ok=0,work=0; R.forEach(d=>{const st=arCell(id,d).st; if(st!=='mc')work++; if(st==='ok')ok++;}); (ok&&ok===work?all:ok?some:zero).push(roster[id].name); });
+    const allLab=R.length===1?'Present':R.length===2?'Present both days':`Present all ${R.length} days`, someLab=R.length===2?'Present one day':'Present some days';
+    const box=`<div class="box"><b>${allLab}: ${all.length}</b><p>${esc(all.join(', '))||'\u2013'}</p>${R.length>1?`<b>${someLab}: ${some.length}</b><p>${esc(some.join(', '))||'\u2013'}</p>`:''}<b class="red">No day counted yet: ${zero.length}</b><p>${esc(zero.join(', '))||'\u2013'}</p></div>`;
+    const range=R.length===1?`${DOW[dow(R[0])]} ${R[0]} Oct 2026`:`${DOW[dow(R[0])]} ${R[0]} Oct \u2013 ${DOW[dow(R[R.length-1])]} ${R[R.length-1]} Oct 2026`;
+    $('arReport').className='arr'+(R.length>4?' wide':'');
+    $('arReport').innerHTML=`<div class="eb">MADROX Challenge</div><h3>Attendance Update</h3><div class="sub">${range} \u00b7 ${N} agents${arArea==='All'?'':' \u00b7 '+esc(arArea)}</div>
+      <div class="cards">${cards}</div><div class="cols">${blocks}${box}</div>
+      <div class="ft">Present = signed in 9:45\u201310:00am and signed out. No sign-out = signed in but did not sign out, so the day is not counted. Late = signed in after 10:00am.${many?' \u2713 Present \u00b7 \u2717 Absent.':''}</div>`;
+  }
+  // the same report as data, used to draw the image
+  function arModel(){
+    const days=arDays(), R=days.filter(d=>d>=arFrom&&d<=arTo), many=R.length>3, lab=many?AR_SHORT:AR_PILL;
+    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea)), N=ids.length;
+    const cards=R.map(d=>{ const c={ok:0,noout:0,late:0,none:0,mc:0}; ids.forEach(id=>c[arCell(id,d).st]++);
+      return {label:`${DOW[dow(d)]} ${d} Oct`.toUpperCase(), ok:c.ok, sub:[[c.none,'absent'],[c.noout,'no sign-out'],[c.late,'late'],[c.mc,'MC']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' · ')||'Everyone present'}; });
+    const tm={}; ids.forEach(id=>{ const r=roster[id], k=`${r.area} · Team ${r.team}`; (tm[k]=tm[k]||[]).push({name:r.name,sts:R.map(d=>arCell(id,d).st)}); });
+    const all=[],some=[],zero=[]; ids.forEach(id=>{ let ok=0,work=0; R.forEach(d=>{const st=arCell(id,d).st; if(st!=='mc')work++; if(st==='ok')ok++;}); (ok&&ok===work?all:ok?some:zero).push(roster[id].name); });
+    const range=R.length===1?`${DOW[dow(R[0])]} ${R[0]} Oct 2026`:`${DOW[dow(R[0])]} ${R[0]} Oct – ${DOW[dow(R[R.length-1])]} ${R[R.length-1]} Oct 2026`;
+    return {R,many,lab,N,cards,teams:Object.entries(tm).map(([name,rows])=>({name,rows})),all,some,zero,
+      sub:`${range} · ${N} agents${arArea==='All'?'':' · '+arArea}`, heads:R.map(d=>`${DOW[dow(d)]} ${d}`.toUpperCase()),
+      allLab:R.length===1?'Present':R.length===2?'Present both days':`Present all ${R.length} days`, someLab:R.length===2?'Present one day':'Present some days'};
+  }
+  function drawAttCanvas(){
+    const M=arModel(), W=1080, P=56, S=2, F='Arial, Helvetica, sans-serif';
+    const cv=document.createElement('canvas'), x=cv.getContext('2d');
+    const font=(w,px)=>{x.font=`${w} ${px}px ${F}`};
+    const wrap=(txt,maxW)=>{ const words=String(txt).split(' '), out=[]; let cur=''; words.forEach(w=>{ const t=cur?cur+' '+w:w; if(x.measureText(t).width>maxW&&cur){out.push(cur);cur=w;} else cur=t; }); if(cur) out.push(cur); return out.length?out:['–']; };
+    const rr=(X,Y,w,h,r)=>{ x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+w,Y,X+w,Y+h,r); x.arcTo(X+w,Y+h,X,Y+h,r); x.arcTo(X,Y+h,X,Y,r); x.arcTo(X,Y,X+w,Y,r); x.closePath(); };
+    // ---- layout ----
+    const two=M.R.length<=4, gap=28, colW=two?(W-2*P-gap)/2:W-2*P, nameW=two?(M.R.length<=2?230:150):260;
+    const pillW=Math.min(112,(colW-nameW-6*(M.R.length-1))/M.R.length), ROW=38, HEAD=40;
+    const per=M.R.length<=2?2:Math.min(4,M.R.length), cardRows=Math.ceil(M.cards.length/per), cardH=M.R.length<=2?180:128, cardW=(W-2*P-24*(per-1))/per;
+    const blkH=t=>HEAD+t.rows.length*ROW+22;
+    font(400,15); const boxW=colW-48; const bx=[[M.allLab+': '+M.all.length,M.all,'#15181d']].concat(M.R.length>1?[[M.someLab+': '+M.some.length,M.some,'#15181d']]:[]).concat([['No day counted yet: '+M.zero.length,M.zero,'#b3261e']]).map(([h,names,col])=>({h,col,lines:wrap(names.join(', ')||'–',boxW)}));
+    const boxH=bx.reduce((a,g)=>a+26+g.lines.length*21+14,0)+30;
+    const items=M.teams.map(t=>({t,h:blkH(t)})).concat([{box:true,h:boxH+18}]);
+    const cols=[[],[]]; if(two){ const first=M.teams.length?M.teams[0].name.split(' \u00b7 ')[0]:'', multi=M.teams.some(t=>t.name.split(' \u00b7 ')[0]!==first); let n=0; items.forEach(i=>{ if(i.box) cols[1].push(i); else if(multi) (i.t.name.split(' \u00b7 ')[0]===first?cols[0]:cols[1]).push(i); else (n++<Math.ceil(M.teams.length/2)?cols[0]:cols[1]).push(i); }); } else cols[0]=items;
+    const colH=c=>c.reduce((a,i)=>a+i.h,0), top=200+cardRows*(cardH+18)+16, H=top+Math.max(colH(cols[0]),colH(cols[1]))+90;
+    cv.width=W*S; cv.height=H*S; x.scale(S,S); x.fillStyle='#fff'; x.fillRect(0,0,W,H); x.textBaseline='alphabetic';
+    // ---- header ----
+    font(700,14); x.fillStyle='#1f5f8b'; let ex=P; 'MADROX CHALLENGE'.split('').forEach(ch=>{ x.fillText(ch,ex,74); ex+=x.measureText(ch).width+2.2; });
+    font(800,56); x.fillStyle='#15181d'; x.fillText('Attendance Update',P,132);
+    font(400,19); x.fillStyle='#5b6470'; x.fillText(M.sub,P,170);
+    // ---- day cards ----
+    M.cards.forEach((c,i)=>{ const X=P+(i%per)*(cardW+24), Y=200+Math.floor(i/per)*(cardH+18); x.fillStyle='#f1f3f7'; rr(X,Y,cardW,cardH,8); x.fill();
+      const big=M.R.length<=2?72:48; font(700,M.R.length<=2?15:12); x.fillStyle='#4b5563'; x.fillText(c.label,X+24,Y+(M.R.length<=2?38:28));
+      font(800,big); x.fillStyle='#1f5f8b'; x.fillText(String(c.ok),X+24,Y+(M.R.length<=2?112:80)); const nw=x.measureText(String(c.ok)).width;
+      font(700,M.R.length<=2?21:14); x.fillStyle='#15181d'; x.fillText(`of ${M.N} present`,X+24+nw+12,Y+(M.R.length<=2?112:80));
+      font(400,M.R.length<=2?17:12); x.fillStyle='#374151'; wrap(c.sub,cardW-40).slice(0,2).forEach((ln,j)=>x.fillText(ln,X+24,Y+(M.R.length<=2?152:104)+j*16)); });
+    // ---- columns ----
+    const PILL={ok:['#1f5f8b','#fff',0],noout:['#fbe6ad','#3b2f06',0],late:['#e3e5ea','#2d3340',0],none:['#fff','#b3261e','#d9534f'],mc:['#fff','#4b5563','#9aa3af']};
+    cols.forEach((col,ci)=>{ let Y=top; const X0=P+ci*(colW+gap);
+      col.forEach(it=>{ if(it.box){ x.strokeStyle='#15181d'; x.lineWidth=2; rr(X0,Y,colW,boxH,8); x.stroke(); let yy=Y+34;
+          bx.forEach(g=>{ font(700,17); x.fillStyle=g.col; x.fillText(g.h,X0+24,yy); yy+=24; font(400,15); x.fillStyle='#374151'; g.lines.forEach(ln=>{x.fillText(ln,X0+24,yy); yy+=21;}); yy+=16; }); }
+        else { const t=it.t, px0=X0+colW-(pillW*M.R.length+6*(M.R.length-1));
+          font(700,18); x.fillStyle='#15181d'; x.fillText(t.name,X0,Y+24);
+          font(700,12); x.fillStyle='#4b5563'; x.textAlign='center'; M.heads.forEach((h,i)=>x.fillText(h,px0+i*(pillW+6)+pillW/2,Y+26)); x.textAlign='left';
+          x.fillStyle='#15181d'; x.fillRect(X0,Y+HEAD-4,colW,2);
+          t.rows.forEach((r,ri)=>{ const ry=Y+HEAD+ri*ROW; font(400,17); x.fillStyle='#15181d'; x.fillText(r.name,X0,ry+24);
+            r.sts.forEach((st,i)=>{ const p=PILL[st]||PILL.none, px=px0+i*(pillW+6); rr(px,ry+6,pillW,25,4); x.fillStyle=p[0]; x.fill(); if(p[2]){x.strokeStyle=p[2];x.lineWidth=1.5;x.stroke();}
+              font(700,12.5); x.fillStyle=p[1]; x.textAlign='center'; x.fillText(M.lab[st],px+pillW/2,ry+23); x.textAlign='left'; });
+            x.fillStyle='#e3e6eb'; x.fillRect(X0,ry+ROW-1,colW,1); }); }
+        Y+=it.h; }); });
+    // ---- footer ----
+    x.fillStyle='#e3e6eb'; x.fillRect(P,H-58,W-2*P,1); font(400,13); x.fillStyle='#5b6470';
+    x.fillText('Present = signed in 9:45–10:00am and signed out. No sign-out = signed in but did not sign out, so the day is not counted. Late = signed in after 10:00am.'+(M.many?'  \u2713 Present \u00b7 \u2717 Absent.':''),P,H-34,W-2*P);
+    return cv;
+  }
+  async function saveAttImage(){
+    const b=$('arImg'), note=$('arImgNote'); b.disabled=true; b.textContent='Making image…';
+    try{
+      const cv=drawAttCanvas(), blob=await new Promise(r=>cv.toBlob(r,'image/png')), name=`MADROX-attendance-${arFrom===arTo?arFrom:arFrom+'-'+arTo}Oct.png`;
+      let shared=false;
+      if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)&&navigator.canShare){ const file=new File([blob],name,{type:'image/png'}); if(navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:'MADROX attendance'}); shared=true; note.textContent='Shared.'; }catch(_){ shared=true; note.textContent='Share cancelled. Tap Save as image to try again.'; } } }
+      if(!shared){ const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),3000); note.textContent='Image saved: '+name; }
+    }catch(err){ note.textContent='Couldn’t make the image. You can screenshot the report below instead.'; }
+    b.disabled=false; b.textContent='Save as image';
+  }
+  async function loadTeamAtt(force){
+    if(isAdmin||practice||!me||!sb) return;
+    if(!force&&Date.now()-teamAttAt<60000) return;
+    teamAttAt=Date.now();
+    try{ const r=await rpc('team_attendance',{p_id:me.id,p_pin:me.pin,p_device:DEVICE}); teamAtt=r.states||{}; setClock(r.clock); arErr=''; }
+    catch(e){ arErr=errText(e); }
+    renderAttRec();
+  }
+  let arErr='';
   function renderAttRec(){
-    if(!isAdmin) return;
-    const days=arDays(); if(!days.length){ $('arTable').innerHTML='<p class="note" style="margin:0">Attendance starts on Thursday 1 October.</p>'; $('arText').value=''; return; }
+    $('arEyebrow').textContent=isAdmin?'Back office':'Team';
+    $('arCsv').hidden=!isAdmin; $('arSumPanel').hidden=!isAdmin; $('arTblPanel').hidden=!isAdmin;
+    if(!isAdmin&&!me){ $('arFilter').innerHTML=''; $('arReport').className='arr'; $('arReport').innerHTML='<p style="margin:0;color:#5b6470">Log in on the Check in tab to see the team attendance.</p>'; return; }
+    if(!isAdmin&&arErr){ $('arReport').className='arr'; $('arReport').innerHTML=`<p style="margin:0;color:#b3261e">Couldn\u2019t load attendance: ${esc(arErr)} Tap Refresh to try again.</p>`; return; }
+    const days=arDays(); if(!days.length){ $('arReport').className='arr'; $('arReport').innerHTML='<p style="margin:0;color:#5b6470">Attendance starts on Thursday 1 October.</p>'; $('arTable').innerHTML=''; $('arText').value=''; return; }
     if(!days.includes(arDay)) arDay=days[days.length-1];
+    renderAttReport(days);
     $('arFilter').innerHTML=['All'].concat(AREAS).map(a=>`<button class="fchip${a===arArea?' on':''}" data-area="${esc(a)}">${esc(a)}</button>`).join('');
     const sel=$('arDay'); if(document.activeElement!==sel) sel.innerHTML=days.map(d=>`<option value="${d}"${d===arDay?' selected':''}>${DOW[dow(d)]} ${d} Oct</option>`).join('');
     if(document.activeElement!==$('arText')) $('arText').value=arSummary(arDay);
@@ -1058,7 +1206,7 @@ body{margin:0}
 
   // ---------- events ----------
   function showTab(tab){document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===tab));['checkin','board','team','uploads','attrec','review','rules','adminLogin'].forEach(t=>$(t).hidden=t!==tab);}
-  document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]'); if(b) showTab(b.dataset.tab);});
+  document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]'); if(b){ showTab(b.dataset.tab); if(b.dataset.tab==='attrec') loadTeamAtt(true); }});
 
   $('idBox').addEventListener('change',e=>{
     if(e.target.id==='pWho'){pMe=e.target.value||null;draft=null;ui={};render();}
@@ -1072,7 +1220,7 @@ body{margin:0}
   }
   $('idBox').addEventListener('click',e=>{
     if(e.target.id==='loginGo'){ const id=$('loginWho').value, pin=$('loginPin').value.trim(); if(!id){flash('Choose your name first.');return;} if(!pin){flash('Enter your PIN.');return;} doLogin(id,pin); }
-    if(e.target.id==='logout'){ me=null; myState=null; draft=null; ui={}; store.del('madrox-login'); render(); }
+    if(e.target.id==='logout'){ me=null; myState=null; teamAtt={}; teamAttAt=0; draft=null; ui={}; store.del('madrox-login'); render(); }
   });
   $('idBox').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='loginPin'){ e.preventDefault(); $('loginGo').click(); } });
   $('days').addEventListener('click',e=>{const b=e.target.closest('[data-day]');if(!b||b.disabled)return;day=+b.dataset.day;ui={};render();});
@@ -1170,8 +1318,11 @@ body{margin:0}
   $('upNext').addEventListener('click',()=>{upDay=Math.min(DAYS,upDay+1);renderUploads();});
   $('upFilter').addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(!b)return;upArea=b.dataset.area;renderUploads();});
   $('arFilter').addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(!b)return;arArea=b.dataset.area;renderAttRec();});
+  $('arFrom').addEventListener('change',e=>{arFrom=+e.target.value; if(arTo<arFrom) arTo=arFrom; renderAttRec();});
+  $('arTo').addEventListener('change',e=>{arTo=+e.target.value; if(arFrom>arTo) arFrom=arTo; renderAttRec();});
+  $('arImg').addEventListener('click',saveAttImage);
   $('arDay').addEventListener('change',e=>{arDay=+e.target.value;renderAttRec();});
-  $('arRefresh').addEventListener('click',async()=>{ flash('Refreshing\u2026',true); await loadAdmin(); flash('Up to date'); });
+  $('arRefresh').addEventListener('click',async()=>{ flash('Refreshing\u2026',true); if(isAdmin) await loadAdmin(); else await loadTeamAtt(true); flash('Up to date'); });
   $('arCsv').addEventListener('click',downloadAttendance);
   $('arCopy').addEventListener('click',()=>{ const ta=$('arText'), b=$('arCopy'); const done=()=>{b.textContent='Copied \u2713'; setTimeout(()=>b.textContent='Copy summary',2000);};
     (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(ta.value):Promise.reject()).then(done,()=>{ ta.focus(); ta.select(); try{document.execCommand('copy');done();}catch(_){ b.textContent='Select and copy the text'; } }); });
