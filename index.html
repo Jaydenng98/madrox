@@ -684,7 +684,7 @@ body{margin:0}
     const lead=(dow(1)+6)%7; for(let i=0;i<lead;i++) h+='<div></div>';
     for(let d=1;d<=DAYS;d++){
       const c=dayChecks(p,d); let pct=0,st='future';
-      if(id){ if(c.mc){pct=100;st='mc'} else {const parts=[c.qr,c.appt>=2,c.video].concat(isWeekday(d)?[c.reel]:[]);pct=Math.round(parts.filter(Boolean).length/parts.length*100); st=d<t?(pct?'done':'missed'):d===t?'today':'future';} }
+      if(id){ if(c.mc){pct=100;st='mc'} else {const parts=isWeekday(d)?[c.qr,c.appt>=2,c.video,c.reel]:[c.appt>=2,c.video];pct=Math.round(parts.filter(Boolean).length/parts.length*100); st=d<t?(pct?'done':'missed'):d===t?'today':'future';} }
       const lock=!practice&&!isAdmin&&d!==t;
       h+=`<button class="day st-${st}${d===day?' sel':''}${isWeekday(d)?'':' we'}" data-day="${d}" aria-label="${d} October" ${lock?'disabled':''}>${d}<span class="bar"><i style="width:${pct}%"></i></span></button>`;
     }
