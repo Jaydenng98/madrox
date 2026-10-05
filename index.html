@@ -251,6 +251,7 @@ body{margin:0}
     <button role="tab" id="t-board" aria-selected="false" data-tab="board" class="adm" hidden>Leaderboard</button>
     <button role="tab" id="t-team" aria-selected="false" data-tab="team" class="adm" hidden>Teams &amp; rules</button>
     <button role="tab" id="t-uploads" aria-selected="false" data-tab="uploads" class="adm" hidden>Daily records</button>
+    <button role="tab" id="t-results" aria-selected="false" data-tab="results" class="adm" hidden>Results</button>
     <button role="tab" id="t-attrec" aria-selected="false" data-tab="attrec">Attendance</button>
     <button role="tab" id="t-review" aria-selected="false" data-tab="review" class="adm" hidden>Review</button>
     <button role="tab" id="t-rules" aria-selected="false" data-tab="rules" class="agt">How marks work</button>
@@ -331,6 +332,22 @@ body{margin:0}
       <div class="row" style="justify-content:space-between;align-items:baseline"><h2 style="margin:0">All bookings</h2><span class="pill" id="bkTotal"></span></div>
       <p class="note" style="margin:6px 0 0">Every booking entry from 1 October to today (follows the area filter). Each person logs their own part and %, so one deal can appear several times. The %s for one deal should add up to 100. Mark an entry cancelled if it’s wrong or the deal falls through.</p>
       <div class="tbl" style="margin-top:10px" id="bkAll"></div>
+    </div>
+  </section>
+
+  <!-- RESULTS UPDATE (admin only) -->
+  <section id="results" class="stack" hidden>
+    <div class="panel stack">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <div><span class="label">Back office · only you can see this</span><h2 style="margin:0">Results update</h2></div>
+        <div class="row"><select id="rsDay" class="field" style="width:auto" aria-label="Day"></select><button class="btn ghost" id="rsRefresh">↻ Refresh</button><button class="btn" id="rsImg">Save as image</button></div>
+      </div>
+      <p class="note" style="margin:0" id="rsNote">Team standings and rankings are the marks so far. The day you pick sets the “day activity” row.</p>
+      <div class="arwrap"><img id="rsPrev" alt="Results update" style="width:100%;max-width:820px;display:block;margin:0 auto;border-radius:10px;border:1px solid var(--line)"></div>
+    </div>
+    <div class="panel stack">
+      <div class="row" style="justify-content:space-between;align-items:flex-end"><h2 style="margin:0">Text summary</h2><button class="btn" id="rsCopy">Copy summary</button></div>
+      <textarea id="rsText" rows="12" readonly style="font-family:inherit;line-height:1.5"></textarea>
     </div>
   </section>
 
@@ -1032,6 +1049,95 @@ body{margin:0}
     const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=`MADROX-records-${t}Oct.csv`; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
   }
 
+  // ---------- results update (back office only) ----------
+  let rsDay=0;
+  function rsModel(){
+    const t=Math.min(DAYS,Math.max(1,today())); if(!rsDay||rsDay>t) rsDay=t;
+    const d=rsDay, k=key(d), wd=isWeekday(d), ids=Object.keys(roster), N=ids.length;
+    const sc={}; ids.forEach(id=>{ const x=score(dataOf(id),id); sc[id]={k1:x.kpi1,k2:x.kpi2,tot:x.kpi1+x.kpi2}; });
+    const groups=groupsOf();
+    const areas=AREAS.map(area=>{ const teams=areaBoard(area,groups).map(tm=>({team:tm.team,k1:tm.kpi1,k2:tm.kpi2,tot:tm.total,n:tm.n}));
+      const a=teams[0], b=teams[1], lead=Math.abs(a.tot-b.tot)<0.05?null:(a.tot>b.tot?'A':'B'); return {area,teams,lead,gap:Math.abs(a.tot-b.tot)}; });
+    const gr=groups.map(g=>({name:g.group+'\u2019s group',tag:`${g.area==='KL'?'KL':'M&JB'} \u00b7 ${g.team}`,k1:g.kpi1,k2:g.kpi2,tot:g.kpi1+g.kpi2,n:g.ids.length})).sort((x,y)=>y.tot-x.tot||y.k1-x.k1||x.name.localeCompare(y.name));
+    const ind=ids.map(id=>({name:roster[id].name,tag:`${roster[id].area==='KL'?'KL':'M&JB'} \u00b7 ${roster[id].team}`,...sc[id]})).sort((x,y)=>y.tot-x.tot||y.k1-x.k1||x.name.localeCompare(y.name));
+    let inOn=0,vid=0,ap2=0,apN=0,reel=0,bk=0;
+    ids.forEach(id=>{ const p=dataOf(id), c=dayChecks(p,d), st=attStatus(p,d), e=(p.days||{})[k]||{};
+      if(st==='ok'||st==='noout') inOn++; if(c.video) vid++; if(c.appt>=2) ap2++; apN+=(e.appts||[]).filter(r=>r&&r.client).length; if(c.reel) reel++;
+      Object.values(p.sales||{}).forEach(x=>{ if(x.day===d&&!x.cancelled) bk+=cnt(x)*ownShare(x); }); });
+    const act=[[wd?`${inOn}/${N}`:'\u2013','Signed in on time'],[`${vid}/${N}`,'Learning video'],[`${ap2}/${N}`,'Did 2 appointments'],[String(apN),'Appointments logged'],[wd?`${reel}/${N}`:'\u2013','Reels'],[nfmt(Math.round(bk*100)/100),'Booking marks']];
+    return {d,N,areas,gr,ind,act,title:`${DOW[dow(d)]} ${d} Oct 2026 \u00b7 Day ${d} of ${DAYS} \u00b7 ${N} agents`};
+  }
+  function drawResults(){
+    const M=rsModel(), W=1080, P=56, S=2, F='Arial, Helvetica, sans-serif', BLUE='#1f5f8b', INK='#15181d', MUTE='#5b6470';
+    const cv=document.createElement('canvas'), x=cv.getContext('2d');
+    const font=(w,px)=>{x.font=`${w} ${px}px ${F}`};
+    const rr=(X,Y,w,h,r)=>{ x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+w,Y,X+w,Y+h,r); x.arcTo(X+w,Y+h,X,Y+h,r); x.arcTo(X,Y+h,X,Y,r); x.arcTo(X,Y,X+w,Y,r); x.closePath(); };
+    const ROW=38, gap=28, colW=(W-2*P-gap)/2;
+    const gRows=Math.ceil(M.gr.length/2), iRows=Math.ceil(M.ind.length/2);
+    const yTeams=232, teamH=206, yAct=yTeams+teamH+56, actH=104, yG=yAct+actH+62, yI=yG+34+gRows*ROW+52, H=yI+34+iRows*ROW+86;
+    cv.width=W*S; cv.height=H*S; x.scale(S,S); x.fillStyle='#fff'; x.fillRect(0,0,W,H); x.textBaseline='alphabetic';
+    const label=(txt,X,Y)=>{ font(700,13); x.fillStyle='#4b5563'; let ex=X; txt.split('').forEach(ch=>{x.fillText(ch,ex,Y); ex+=x.measureText(ch).width+1.4;}); };
+    // header
+    font(700,14); x.fillStyle=BLUE; let ex=P; 'MADROX CHALLENGE'.split('').forEach(ch=>{ x.fillText(ch,ex,74); ex+=x.measureText(ch).width+2.2; });
+    font(800,56); x.fillStyle=INK; x.fillText('Results Update',P,132);
+    font(400,19); x.fillStyle=MUTE; x.fillText(M.title,P,170);
+    // team standings
+    label('TEAM STANDINGS \u00b7 KPI 1 + KPI 2 (OUT OF 100)',P,yTeams-12);
+    M.areas.forEach((A,i)=>{ const X=P+i*(colW+gap), Y=yTeams; x.fillStyle='#f1f3f7'; rr(X,Y,colW,teamH,8); x.fill();
+      font(700,19); x.fillStyle=INK; x.fillText(A.area,X+22,Y+36);
+      font(400,14); x.fillStyle=MUTE; x.textAlign='right'; x.fillText(A.lead?`Team ${A.lead} leads by ${f1(A.gap)}`:'Level',X+colW-22,Y+36); x.textAlign='left';
+      A.teams.forEach((tm,j)=>{ const ty=Y+56+j*70, win=A.lead===tm.team; x.fillStyle=win?BLUE:'#fff'; rr(X+16,ty,colW-32,60,6); x.fill(); if(!win){x.strokeStyle='#d5d9e0';x.lineWidth=1.5;x.stroke();}
+        font(700,20); x.fillStyle=win?'#fff':INK; x.fillText('Team '+tm.team,X+34,ty+28);
+        font(400,13); x.fillStyle=win?'#dbe8f2':MUTE; x.fillText(`KPI 1 ${f1(tm.k1)} \u00b7 KPI 2 ${f1(tm.k2)} \u00b7 ${tm.n} agents`,X+34,ty+48);
+        font(800,34); x.fillStyle=win?'#fff':INK; x.textAlign='right'; x.fillText(f1(tm.tot),X+colW-34,ty+41); x.textAlign='left'; }); });
+    // day activity
+    label(`DAY ACTIVITY \u00b7 ${DOW[dow(M.d)].toUpperCase()} ${M.d} OCT`,P,yAct-12);
+    const aw=(W-2*P-14*(M.act.length-1))/M.act.length;
+    M.act.forEach((a,i)=>{ const X=P+i*(aw+14); x.fillStyle='#f1f3f7'; rr(X,yAct,aw,actH,8); x.fill();
+      font(800,30); x.fillStyle=BLUE; x.fillText(a[0],X+14,yAct+46); font(400,13); x.fillStyle='#374151'; x.fillText(a[1],X+14,yAct+76,aw-22); });
+    // ranking tables
+    const table=(title,rows,Y,per)=>{ label(title,P,Y-12);
+      [0,1].forEach(ci=>{ const X=P+ci*(colW+gap); x.fillStyle=INK; x.fillRect(X,Y,colW,2);
+        font(700,11); x.fillStyle='#4b5563'; x.textAlign='right'; x.fillText('KPI 1',X+colW-150,Y+20); x.fillText('KPI 2',X+colW-84,Y+20); x.fillText('TOTAL',X+colW,Y+20); x.textAlign='left';
+        rows.slice(ci*per,(ci+1)*per).forEach((r,ri)=>{ const rank=ci*per+ri+1, ry=Y+30+ri*ROW;
+          if(rank<=3){ x.fillStyle=BLUE; rr(X,ry+4,28,26,5); x.fill(); font(700,14); x.fillStyle='#fff'; x.textAlign='center'; x.fillText(String(rank),X+14,ry+22); x.textAlign='left'; }
+          else { font(700,14); x.fillStyle='#6b7280'; x.textAlign='center'; x.fillText(String(rank),X+14,ry+22); x.textAlign='left'; }
+          font(rank<=3?700:400,16); x.fillStyle=INK; x.fillText(r.name,X+40,ry+23,colW-290); const nw=Math.min(x.measureText(r.name).width,colW-290);
+          font(400,12); x.fillStyle='#6b7280'; x.fillText(r.tag,X+40+nw+10,ry+23);
+          font(400,14); x.fillStyle='#374151'; x.textAlign='right'; x.fillText(f1(r.k1),X+colW-150,ry+23); x.fillText(f1(r.k2),X+colW-84,ry+23);
+          font(800,17); x.fillStyle=INK; x.fillText(f1(r.tot),X+colW,ry+23); x.textAlign='left';
+          x.fillStyle='#e3e6eb'; x.fillRect(X,ry+ROW-1,colW,1); }); }); };
+    table('GROUP RANKING \u00b7 AVERAGE OF THE GROUP',M.gr,yG,gRows);
+    table('INDIVIDUAL RANKING',M.ind,yI,iRows);
+    // footer
+    x.fillStyle='#e3e6eb'; x.fillRect(P,H-58,W-2*P,1); font(400,13); x.fillStyle=MUTE;
+    x.fillText('Marks so far. KPI 1 = daily habits (max 50). KPI 2 = bookings, 1 full deal = 1 mark (max 50). Team and group = average of members.',P,H-34,W-2*P);
+    return cv;
+  }
+  function rsSummary(){
+    const M=rsModel(), L=[`MADROX results \u00b7 ${M.title}`,''];
+    M.areas.forEach(A=>L.push(`${A.area}: Team A ${f1(A.teams[0].tot)} vs Team B ${f1(A.teams[1].tot)}`+(A.lead?` \u2013 Team ${A.lead} leads by ${f1(A.gap)}`:' \u2013 level')));
+    L.push(''); L.push('Top 5 agents: '+M.ind.slice(0,5).map((r,i)=>`${i+1}. ${r.name} ${f1(r.tot)}`).join(', '));
+    L.push('Top 3 groups: '+M.gr.slice(0,3).map((r,i)=>`${i+1}. ${r.name} ${f1(r.tot)}`).join(', '));
+    L.push(''); L.push(`Day activity (${DOW[dow(M.d)]} ${M.d} Oct): `+M.act.map(a=>`${a[1]} ${a[0]}`).join(' \u00b7 '));
+    return L.join('\n');
+  }
+  function renderResults(){
+    if(!isAdmin||$('results').hidden) return;
+    const t=Math.min(DAYS,Math.max(1,today())), sel=$('rsDay'); if(!rsDay||rsDay>t) rsDay=t;
+    if(document.activeElement!==sel) sel.innerHTML=Array.from({length:t},(_,i)=>i+1).map(d=>`<option value="${d}"${d===rsDay?' selected':''}>${DOW[dow(d)]} ${d} Oct</option>`).join('');
+    try{ $('rsPrev').src=drawResults().toDataURL('image/png'); }catch(_){ }
+    if(document.activeElement!==$('rsText')) $('rsText').value=rsSummary();
+  }
+  async function saveResultsImage(){
+    const b=$('rsImg'), note=$('rsNote'); b.disabled=true; b.textContent='Making image\u2026';
+    try{ const cv=drawResults(), blob=await new Promise(r=>cv.toBlob(r,'image/png')), name=`MADROX-results-${rsDay}Oct.png`; let shared=false;
+      if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)&&navigator.canShare){ const file=new File([blob],name,{type:'image/png'}); if(navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:'MADROX results'}); shared=true; note.textContent='Shared.'; }catch(_){ shared=true; note.textContent='Share cancelled. Tap Save as image to try again.'; } } }
+      if(!shared){ const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),3000); note.textContent='Image saved: '+name; }
+    }catch(err){ note.textContent='Couldn\u2019t make the image. You can screenshot the preview below instead.'; }
+    b.disabled=false; b.textContent='Save as image';
+  }
+
   // ---------- attendance record (back office) ----------
   let arArea='All', arDay=0;
   const arDays=()=>{ const t=Math.min(DAYS,Math.max(1,today())), last=clock.test?DAYS:t, out=[]; for(let d=1;d<=last;d++) if(isWeekday(d)) out.push(d); return out; };
@@ -1201,11 +1307,11 @@ body{margin:0}
     if(cur&&cur.hidden) showTab('checkin');
   }
   function render(){
-    renderId();renderDays();renderDayView();renderYT();renderSales();renderMine();renderBoard();renderReview();renderUploads();renderAttRec();renderTeam();renderTabs();renderPoster();
+    renderId();renderDays();renderDayView();renderYT();renderSales();renderMine();renderBoard();renderReview();renderUploads();renderAttRec();renderResults();renderTeam();renderTabs();renderPoster();
   }
 
   // ---------- events ----------
-  function showTab(tab){document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===tab));['checkin','board','team','uploads','attrec','review','rules','adminLogin'].forEach(t=>$(t).hidden=t!==tab);}
+  function showTab(tab){document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===tab));['checkin','board','team','uploads','results','attrec','review','rules','adminLogin'].forEach(t=>$(t).hidden=t!==tab); if(tab==='results') renderResults();}
   document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]'); if(b){ showTab(b.dataset.tab); if(b.dataset.tab==='attrec') loadTeamAtt(true); }});
 
   $('idBox').addEventListener('change',e=>{
@@ -1317,6 +1423,11 @@ body{margin:0}
   $('upPrev').addEventListener('click',()=>{upDay=Math.max(1,upDay-1);renderUploads();});
   $('upNext').addEventListener('click',()=>{upDay=Math.min(DAYS,upDay+1);renderUploads();});
   $('upFilter').addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(!b)return;upArea=b.dataset.area;renderUploads();});
+  $('rsDay').addEventListener('change',e=>{rsDay=+e.target.value;renderResults();});
+  $('rsRefresh').addEventListener('click',async()=>{ flash('Refreshing\u2026',true); await loadAdmin(); flash('Up to date'); });
+  $('rsImg').addEventListener('click',saveResultsImage);
+  $('rsCopy').addEventListener('click',()=>{ const ta=$('rsText'), b=$('rsCopy'); const done=()=>{b.textContent='Copied \u2713'; setTimeout(()=>b.textContent='Copy summary',2000);};
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(ta.value):Promise.reject()).then(done,()=>{ ta.focus(); ta.select(); try{document.execCommand('copy');done();}catch(_){ b.textContent='Select and copy the text'; } }); });
   $('arFilter').addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(!b)return;arArea=b.dataset.area;renderAttRec();});
   $('arFrom').addEventListener('change',e=>{arFrom=+e.target.value; if(arTo<arFrom) arTo=arFrom; renderAttRec();});
   $('arTo').addEventListener('change',e=>{arTo=+e.target.value; if(arFrom>arTo) arFrom=arTo; renderAttRec();});
