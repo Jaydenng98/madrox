@@ -1,0 +1,1517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#12151D">
+<title>MADROX Scoreboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#EEF0F4; --panel:#FFFFFF; --ink:#12151D; --muted:#5E6573; --line:#D9DDE5;
+  --accent:#F2541B; --accent-ink:#FFFFFF; --soft:#FFE7DD;
+  --good:#1E8A52; --good-soft:#DDF3E6; --warn:#B7791F; --chip:#E4E7EE;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1016; --panel:#181B24; --ink:#EEF0F5; --muted:#9AA1B0; --line:#2A2F3B;
+    --accent:#FF6A33; --accent-ink:#140A05; --soft:#3A2118;
+    --good:#4CC98A; --good-soft:#15301F; --warn:#E3AE54; --chip:#252a35;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1016; --panel:#181B24; --ink:#EEF0F5; --muted:#9AA1B0; --line:#2A2F3B;
+  --accent:#FF6A33; --accent-ink:#140A05; --soft:#3A2118;
+  --good:#4CC98A; --good-soft:#15301F; --warn:#E3AE54; --chip:#252a35;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:880px;margin:0 auto}
+header{padding-block:22px 10px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px}
+h1{font-family:var(--display);font-weight:800;font-size:44px;line-height:.9;letter-spacing:.01em;margin:0;text-transform:uppercase}
+h1 span{color:var(--accent)}
+.sub{color:var(--muted);font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:6px;padding-block:10px;border-bottom:1px solid var(--line);margin-bottom:18px}
+nav button{flex:1;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.04em;text-transform:uppercase;border:0;border-radius:8px;padding:10px 8px;background:var(--chip);color:var(--ink);cursor:pointer}
+nav button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+button{font-family:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h2{font-family:var(--display);font-weight:700;font-size:24px;text-transform:uppercase;letter-spacing:.03em;margin:0 0 10px;text-wrap:balance}
+.label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.stack{display:flex;flex-direction:column;gap:16px}
+select,input[type=text],input[type=number]{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.dow{font-size:11px;text-align:center;color:var(--muted);font-weight:600;letter-spacing:.06em}
+.day{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 0 5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-variant-numeric:tabular-nums;font-weight:600}
+.day .bar{width:60%;height:4px;border-radius:2px;background:var(--chip);overflow:hidden}
+.day .bar i{display:block;height:100%;background:var(--good)}
+.day.mc .bar i{background:var(--warn)}
+.day.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.day.we{color:var(--muted)}
+.tasks{display:grid;gap:8px}
+.task{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.task b{font-weight:600}
+.task small{display:block;color:var(--muted);font-size:12px}
+.tog{min-width:92px;border:0;border-radius:999px;padding:8px 14px;font-weight:600;cursor:pointer;background:var(--chip);color:var(--ink)}
+.tog.on{background:var(--good);color:#fff}
+.tog:disabled{opacity:.45;cursor:not-allowed}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:18px;cursor:pointer}
+.step output{font-family:var(--display);font-weight:700;font-size:24px;min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
+.weeks{display:flex;gap:6px;flex-wrap:wrap}
+.weeks button{flex:1;min-width:92px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px;cursor:pointer;font-weight:600;font-size:13px}
+.weeks button.on{background:var(--good);border-color:var(--good);color:#fff}
+.btn{border:0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--chip);color:var(--ink)}
+.sales{display:grid;gap:6px;margin-top:10px}
+.sale{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;background:var(--bg);font-variant-numeric:tabular-nums}
+.sale.x{opacity:.5;text-decoration:line-through}
+.sale button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:12px;text-decoration:underline}
+.mine{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.mine div{background:var(--bg);border-radius:8px;padding:10px}
+.mine strong{display:block;font-family:var(--display);font-size:24px;font-variant-numeric:tabular-nums}
+.board{display:grid;gap:10px}
+.pair{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.pair.lead{border-color:var(--accent);box-shadow:inset 4px 0 0 var(--accent)}
+.rank{font-family:var(--display);font-weight:800;font-size:34px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums}
+.pair.lead .rank{color:var(--accent)}
+.pname{font-weight:600}
+.pmeta{font-size:13px;color:var(--muted)}
+.total{font-family:var(--display);font-weight:800;font-size:38px;line-height:1;text-align:right;font-variant-numeric:tabular-nums}
+.total small{display:block;font-family:var(--body);font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.split{grid-column:2 / 4;display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--chip);font-variant-numeric:tabular-nums}
+.pill.k1{background:var(--good-soft);color:var(--good)}
+.pill.k2{background:var(--soft);color:var(--accent)}
+details{grid-column:1 / 4}
+summary{cursor:pointer;font-size:13px;color:var(--muted)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right}
+.note{font-size:13px;color:var(--muted)}
+.banner{padding:12px 14px;border-radius:10px;background:var(--soft);color:var(--ink);font-size:14px}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.rules ul{margin:6px 0 0;padding-left:18px}
+.rules li{margin:3px 0}
+.vs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.tcard{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.tcard.lead{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.tname{font-family:var(--display);font-weight:800;font-size:40px;line-height:.9}
+.tcard.lead .tname{color:var(--accent)}
+.glist{display:grid;gap:6px}
+.grp{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.grp summary{display:flex;justify-content:space-between;gap:10px;align-items:baseline;color:var(--ink);font-size:14px;list-style:none}
+.grp summary::-webkit-details-marker{display:none}
+.gscore{font-family:var(--display);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums}
+@media (max-width:480px){.vs{grid-template-columns:1fr}}
+.practice{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;border:1px dashed var(--line);background:var(--panel);margin-bottom:16px}
+.practice.on{border:1px solid var(--warn);background:var(--soft)}
+.practice.on #pTitle{color:var(--warn)}
+.who{font-family:var(--display);font-weight:800;font-size:32px;line-height:1;text-transform:uppercase}
+.confirm{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:10px;background:var(--soft);margin-top:8px}
+.btn.big{width:100%;padding:14px;font-size:16px}
+.task.done{background:var(--bg)}
+.val{font-weight:600;font-variant-numeric:tabular-nums}
+.lockbar{font-size:13px;font-weight:600;color:var(--good);background:var(--good-soft);padding:8px 12px;border-radius:8px}
+.day.st-missed{color:var(--muted);opacity:.55}
+.day.st-today{border-color:var(--ink)}
+.day.st-mc .bar i{background:var(--warn)}
+button.link{border:0;background:none;color:var(--accent);cursor:pointer;font-size:12px;text-decoration:underline;padding:0}
+.dcard h3{font-family:var(--display);font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.dcard{display:flex;flex-direction:column;gap:10px}
+.chip{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--chip);white-space:nowrap}
+.chip.ok{background:var(--good-soft);color:var(--good)}
+.chip.bad{background:var(--soft);color:var(--accent)}
+.filebtn{display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--line);border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;background:var(--bg)}
+.filebtn:focus-within{outline:2px solid var(--accent)}
+.appts{display:grid;gap:6px}
+.appt{display:grid;grid-template-columns:96px 1fr 1.4fr;gap:6px}
+.apptbox{display:grid;gap:6px;padding:8px;border:1px solid var(--line);border-radius:10px}
+.appt2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+@media (max-width:480px){.appt{grid-template-columns:84px 1fr}.appt input:nth-child(3){grid-column:1 / -1}.appt2{grid-template-columns:1fr}}
+.appt2 select{font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%;min-width:0}
+.appt input{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px}
+textarea,input[type=url]{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+.poster{display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:center}
+.qr{background:#fff;border-radius:10px;padding:8px;width:200px;max-width:100%}
+.qr svg{display:block;width:100%;height:auto}
+button.link:disabled{color:var(--muted);text-decoration:none;cursor:default}
+@media (max-width:520px){.appt{grid-template-columns:1fr 1fr}.appt input:last-child{grid-column:1 / 3}.poster{grid-template-columns:1fr}}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.fchip{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:6px 14px;font-weight:600;cursor:pointer}
+.fchip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.link.strong{color:var(--ink);font-weight:600;font-size:14px;text-decoration:none}
+nav{overflow-x:auto}
+nav button{white-space:nowrap}
+#dlDay{width:auto;min-width:150px}
+a{color:var(--accent)}
+.field,input[type=password]{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.foot{margin-top:28px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pinrow{display:grid;grid-template-columns:1fr 130px auto;gap:8px;align-items:end}
+@media (max-width:480px){.pinrow{grid-template-columns:1fr 1fr}.pinrow .btn{grid-column:1 / 3}}
+body{margin:0}
+.upgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.upcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.atted{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:10px;border:1px dashed var(--line);border-radius:10px;background:var(--bg)}
+.atted label{display:flex;flex-direction:column;gap:2px;font-size:12px;font-weight:600;color:var(--muted)}
+.atted input{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.edsec{display:grid;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+.edsec:first-of-type{border-top:0}
+.edsec h4{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+.edrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.edrow input,.edrow select{font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.edrow input[type=text],.edrow input[type=url]{flex:1 1 140px}
+.edpanel{display:grid;gap:4px;padding:12px;border:2px solid var(--accent);border-radius:12px;background:var(--bg)}
+.atted .note{flex:1 1 100%;margin:0;font-size:12px}
+/* attendance report (image-ready) */
+.arwrap{overflow-x:auto}
+.arr{background:#fff;color:#15181d;padding:28px;border-radius:10px;min-width:680px;font-family:Inter,Archivo,Arial,Helvetica,sans-serif;line-height:1.35}
+.arr .eb{font-size:12px;font-weight:700;letter-spacing:.14em;color:#1f5f8b;text-transform:uppercase}
+.arr h3{font-size:38px;font-weight:800;margin:2px 0 4px;letter-spacing:-.01em;text-transform:none;color:#15181d;font-family:inherit}
+.arr .sub{color:#5b6470;font-size:15px;text-transform:none;letter-spacing:0;font-weight:400}
+.arr .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:20px 0 22px}
+.arr .card{background:#f1f3f7;border-radius:8px;padding:16px 18px}
+.arr .card .d{font-size:12px;font-weight:700;letter-spacing:.1em;color:#4b5563;text-transform:uppercase}
+.arr .card .n{font-size:46px;font-weight:800;color:#1f5f8b;line-height:1.05}
+.arr .card .n small{font-size:15px;color:#15181d;font-weight:600;margin-left:6px}
+.arr .card .s{font-size:13px;color:#374151;margin-top:4px}
+.arr .cols{column-count:2;column-gap:28px}
+.arr.wide .cols{column-count:1}
+.arr .blk{break-inside:avoid;margin:0 0 18px}
+.arr table{width:100%;border-collapse:collapse;font-size:14px}
+.arr th{font-size:11px;font-weight:700;color:#4b5563;letter-spacing:.04em;text-transform:uppercase;padding:4px 3px;text-align:center;border-bottom:2px solid #15181d;background:none}
+.arr th.g{text-align:left;font-size:15px;color:#15181d;text-transform:none;letter-spacing:0}
+.arr td{padding:5px 3px;border-bottom:1px solid #e3e6eb;text-align:center;background:none}
+.arr td.nm{text-align:left;white-space:nowrap;padding-right:8px}
+.arr .pl{display:block;font-size:11.5px;font-weight:700;border-radius:4px;padding:5px 4px;white-space:nowrap;min-width:54px}
+.arr .p-ok{background:#1f5f8b;color:#fff}
+.arr .p-noout{background:#fbe6ad;color:#3b2f06}
+.arr .p-late{background:#e3e5ea;color:#2d3340}
+.arr .p-none{background:#fff;color:#b3261e;box-shadow:inset 0 0 0 1.5px #d9534f}
+.arr .p-mc{background:#fff;color:#4b5563;box-shadow:inset 0 0 0 1.5px #9aa3af}
+.arr .box{break-inside:avoid;border:2px solid #15181d;border-radius:8px;padding:16px 18px;margin:4px 0 18px}
+.arr .box b{display:block;font-size:15px;margin-top:10px}
+.arr .box b:first-child{margin-top:0}
+.arr .box p{margin:2px 0 0;font-size:13px;color:#374151}
+.arr .box .red{color:#b3261e}
+.arr .ft{border-top:1px solid #e3e6eb;margin-top:6px;padding-top:10px;font-size:12px;color:#5b6470}
+@media (max-width:720px){.arr{min-width:0;padding:16px}.arr h3{font-size:27px}.arr .cols{column-count:1}.arr .card .n{font-size:38px}.arr .blk{overflow-x:auto}.arr .pl{min-width:46px;font-size:11px}.arr td.nm{white-space:normal}}
+.artbl td,.artbl th{text-align:center;white-space:nowrap;padding:6px 8px}
+.artbl td:first-child,.artbl th:first-child{text-align:left;position:sticky;left:0;background:var(--panel)}
+.artbl small{display:block;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.artbl .a-ok{color:var(--good);font-weight:700}
+.artbl .a-bad{color:var(--accent);font-weight:700}
+.artbl .a-mid{color:var(--muted);font-weight:700}
+.artbl tr.grp td{text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+.upcard.warn{border-color:var(--accent)}
+.rec{display:grid;grid-template-columns:108px 1fr;gap:6px 10px;margin:0;font-size:14px}
+.rec dt{color:var(--muted);font-size:12px;font-weight:600;padding-top:2px}
+.rec dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.rec .bad{color:var(--accent);font-weight:600}
+.rec .ok{color:var(--good);font-weight:600}
+.upsum{display:flex;flex-wrap:wrap;gap:6px}
+.xs{font-size:12px;color:var(--muted)}
+.day:disabled{cursor:default}
+.tick{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer;background:var(--panel)}
+.tick input{width:18px;height:18px;accent-color:var(--accent)}
+#saleWith{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+.bkrole{display:flex;flex-direction:column;gap:2px;flex:1 1 160px;min-width:0}
+.bkrole select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%}
+.bkcount{display:flex;flex-direction:column;gap:2px;flex:0 0 120px}
+.bkcount input{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+#saleForm{align-items:flex-end}
+.saving{font-size:12px;color:var(--muted);min-height:18px}
+@media (max-width:480px){h1{font-size:36px}.total{font-size:30px}.pair{grid-template-columns:34px 1fr auto;gap:8px}.rank{font-size:26px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="sub">1–31 October 2026 · Team PK</div>
+      <h1>MAD<span>ROX</span> Scoreboard</h1>
+    </div>
+    <div class="sub" id="countLine"></div>
+  </header>
+
+  <nav role="tablist">
+    <button role="tab" id="t-checkin" aria-selected="true" data-tab="checkin">Check in</button>
+    <button role="tab" id="t-board" aria-selected="false" data-tab="board" class="adm" hidden>Leaderboard</button>
+    <button role="tab" id="t-team" aria-selected="false" data-tab="team" class="adm" hidden>Teams &amp; rules</button>
+    <button role="tab" id="t-uploads" aria-selected="false" data-tab="uploads" class="adm" hidden>Daily records</button>
+    <button role="tab" id="t-results" aria-selected="false" data-tab="results" class="adm" hidden>Results</button>
+    <button role="tab" id="t-attrec" aria-selected="false" data-tab="attrec">Attendance</button>
+    <button role="tab" id="t-review" aria-selected="false" data-tab="review" class="adm" hidden>Review</button>
+    <button role="tab" id="t-rules" aria-selected="false" data-tab="rules" class="agt">How marks work</button>
+  </nav>
+
+  <div id="notice" class="banner" hidden></div>
+  <div class="practice" id="practiceBar" hidden>
+    <div><b id="pTitle">Want to try it first?</b><span class="note" id="pText"> Practice mode unlocks all 31 days. Nothing you tick is saved or shown to anyone.</span></div>
+    <div class="row">
+      <button class="btn ghost" id="pSample" hidden>Fill sample data</button>
+      <button class="btn" id="pToggle">Start practice</button>
+    </div>
+  </div>
+
+  <!-- CHECK IN -->
+  <section id="checkin" class="stack">
+    <div class="panel stack">
+      <div id="idBox"></div>
+      <div>
+        <div class="row" style="justify-content:space-between;margin-bottom:6px">
+          <span class="label">October</span>
+          <span class="note" id="dayTitle"></span>
+        </div>
+        <div class="days" id="days"></div>
+        <p class="note" style="margin:8px 0 0">You can only check in on today’s date. Each part locks once you submit it.</p>
+      </div>
+    </div>
+
+    <div class="stack" id="dayView"></div>
+    <div class="saving" id="saving" role="status"></div>
+
+    <div class="panel">
+      <h2>YouTube · 1 per week</h2>
+      <div id="ytBox"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Bookings · done deals</h2>
+      <div class="row" id="saleForm">
+        <label class="bkcount"><span class="label">How many</span><input type="number" id="saleCount" min="1" max="20" step="1" value="1" inputmode="numeric" aria-label="Number of bookings"></label>
+        <input type="text" id="saleNote" placeholder="Project / unit (e.g. Imperial Lexis A-12-3, A-12-5)" style="flex:2 1 220px" aria-label="Project and unit">
+        <div style="flex:1 1 100%"><span class="label">My part in this deal (tick all that apply)</span>
+          <div class="row" style="gap:8px;margin-top:4px">
+            <label class="tick"><input type="checkbox" id="rCloser"> Closer</label>
+            <label class="tick"><input type="checkbox" id="rCaller"> Caller</label>
+            <label class="tick"><input type="checkbox" id="rAds"> Ads</label>
+          </div></div>
+        <label class="bkcount"><span class="label">My % of this deal</span><input type="number" id="salePct" min="1" max="100" step="1" placeholder="e.g. 60" inputmode="decimal" aria-label="My percentage of this deal"></label>
+        <input type="text" id="saleWith" placeholder="With whom? (e.g. Brad caller, Kai ads)" style="flex:1 1 100%" aria-label="With whom">
+        <p class="note" id="saleShare" style="margin:0;flex:1 1 100%"></p>
+        <button class="btn" id="addSale">Add booking</button>
+      </div>
+      <p class="note" id="saleHint" style="margin:8px 0 0"></p>
+      <div class="sales" id="sales"></div>
+    </div>
+
+    <div class="panel">
+      <h2>My marks so far</h2>
+      <div class="mine" id="mine"></div>
+    </div>
+  </section>
+
+  <!-- UPLOADS (admin) -->
+  <section id="uploads" class="stack" hidden>
+    <div class="panel stack">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <div><span class="label">Back office</span><h2 style="margin:0" id="upTitle">Daily records</h2></div>
+        <div class="row"><button class="btn ghost" id="upPrev" aria-label="Previous day">←</button><select id="upDay" aria-label="Day" class="field" style="width:auto;min-width:150px"></select><button class="btn ghost" id="upNext" aria-label="Next day">→</button></div>
+      </div>
+      <div class="row" id="upFilter"></div>
+      <div class="row" id="upStatus"></div>
+      <div id="upSum" class="upsum"></div>
+      <p class="note" style="margin:0">Everything each agent entered for the day: sign in and sign out, learning video, appointments, reel, YouTube and bookings. Attendance (Monday to Friday) only counts when the agent signed in between 9:45am and 10:00am <b>and</b> signed out by 11:59pm. A sign-in with no sign-out is shown here but gets no marks.</p>
+      <div class="row"><button class="btn ghost" id="upRefresh">↻ Refresh</button><button class="btn ghost" id="upCsv">⬇ Download everything (Excel)</button></div>
+    </div>
+    <div id="upBody" class="upgrid"></div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:baseline"><h2 style="margin:0">All bookings</h2><span class="pill" id="bkTotal"></span></div>
+      <p class="note" style="margin:6px 0 0">Every booking entry from 1 October to today (follows the area filter). Each person logs their own part and %, so one deal can appear several times. The %s for one deal should add up to 100. Mark an entry cancelled if it’s wrong or the deal falls through.</p>
+      <div class="tbl" style="margin-top:10px" id="bkAll"></div>
+    </div>
+  </section>
+
+  <!-- RESULTS UPDATE (admin only) -->
+  <section id="results" class="stack" hidden>
+    <div class="panel stack">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <div><span class="label">Back office · only you can see this</span><h2 style="margin:0">Results update</h2></div>
+        <div class="row"><select id="rsDay" class="field" style="width:auto" aria-label="Day"></select><button class="btn ghost" id="rsRefresh">↻ Refresh</button><button class="btn" id="rsImg">Save as image</button></div>
+      </div>
+      <p class="note" style="margin:0" id="rsNote">Team standings and rankings are the marks so far. The day you pick sets the “day activity” row.</p>
+      <div class="arwrap"><img id="rsPrev" alt="Results update" style="width:100%;max-width:820px;display:block;margin:0 auto;border-radius:10px;border:1px solid var(--line)"></div>
+    </div>
+    <div class="panel stack">
+      <div class="row" style="justify-content:space-between;align-items:flex-end"><h2 style="margin:0">Text summary</h2><button class="btn" id="rsCopy">Copy summary</button></div>
+      <textarea id="rsText" rows="12" readonly style="font-family:inherit;line-height:1.5"></textarea>
+    </div>
+  </section>
+
+  <!-- ATTENDANCE RECORD (admin) -->
+  <section id="attrec" class="stack" hidden>
+    <div class="panel stack">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <div><span class="label" id="arEyebrow">Team</span><h2 style="margin:0">Attendance record</h2></div>
+        <div class="row"><button class="btn ghost" id="arRefresh">↻ Refresh</button><button class="btn ghost" id="arCsv" hidden>⬇ Download attendance (Excel)</button></div>
+      </div>
+      <div class="row" id="arFilter"></div>
+      <p class="note" style="margin:0">Every agent, every working day (Monday to Friday). <b>✓</b> = signed in 9:45–10:00am and signed out. <b>No out</b> = signed in on time but no sign-out yet. <b>Late</b> = signed in outside 9:45–10:00am. <b>✗</b> = no sign-in. Only ✓ days count for marks.</p>
+    </div>
+    <div class="panel stack">
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <h2 style="margin:0">Attendance update</h2>
+        <div class="row"><select id="arFrom" class="field" style="width:auto" aria-label="From day"></select><span class="note">to</span><select id="arTo" class="field" style="width:auto" aria-label="To day"></select><button class="btn" id="arImg">Save as image</button></div>
+      </div>
+      <p class="note" style="margin:0" id="arImgNote">Pick the days. Tap Save as image to keep or share it.</p>
+      <div class="arwrap"><div id="arReport" class="arr"></div></div>
+    </div>
+    <div class="panel stack" id="arSumPanel" hidden>
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <h2 style="margin:0">Daily summary</h2>
+        <div class="row"><select id="arDay" class="field" style="width:auto" aria-label="Day"></select><button class="btn" id="arCopy">Copy summary</button></div>
+      </div>
+      <textarea id="arText" rows="9" readonly style="font-family:inherit;line-height:1.5"></textarea>
+    </div>
+    <div class="panel" id="arTblPanel" hidden><div class="tbl" id="arTable"></div></div>
+  </section>
+
+  <!-- REVIEW (admin) -->
+  <section id="review" class="stack" hidden>
+    <div class="panel stack">
+      <div>
+        <label class="label" for="revWho">Review an agent</label>
+        <select id="revWho"></select>
+      </div>
+      <p class="note" style="margin:0">Only you can see this tab. MC letters are private to you and the agent. Use <b>Mark attended</b> if an agent was there but couldn’t sign in (for example, a phone problem).</p>
+    </div>
+    <div id="revBody" class="stack"></div>
+  </section>
+
+  <!-- LEADERBOARD -->
+  <section id="board" class="stack" hidden>
+    <div class="stack" id="pairs"></div>
+    <p class="note" id="unpaired"></p>
+  </section>
+
+  <!-- TEAMS & RULES -->
+  <section id="team" class="stack" hidden>
+    <div class="panel">
+      <h2>Teams</h2>
+      <p class="note" style="margin-top:0" id="teamHint"></p>
+      <div class="tbl"><table>
+        <thead><tr><th>Name</th><th>Area</th><th>Team</th><th>Group (senior)</th><th>Role</th><th>PIN</th><th>Phone</th><th>Check-ins</th></tr></thead>
+        <tbody id="teamRows"></tbody>
+      </table></div>
+    </div>
+    <div class="panel">
+      <h2>App link for agents</h2>
+      <div class="row"><code id="appLink" style="font-size:13px;word-break:break-all"></code><button class="btn ghost" id="copyLink">Copy link</button></div>
+      <p class="note" style="margin:8px 0 0">Office presence: Monday to Friday only. Agents sign in 9:45am–10:00am and sign out any time before 11:59pm. Post the group photo in the group chat, then tick Sign in.</p>
+    </div>
+    <div class="panel">
+      <h2>How marks work</h2>
+      <div class="rules">
+        <div>
+          <b>KPI 1 · Daily tasks (50)</b>
+          <ul>
+            <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
+            <li>Learning video 9–10am. Appointments, reel, YouTube and bookings 10am–11:59pm.</li>
+            <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
+            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Log every appointment you have; 2 a day count for marks. Every appointment = 1: just add the time, client name and project.</li>
+            <li>Reels: 1 a day with the link (its own submit), Monday to Friday only, 22 days</li>
+            <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
+            <li>YouTube: 1 link a week (Shorts or full video), 4 weeks: 5–11, 12–18, 19–25 and 26–31 Oct, target 4</li>
+            <li>MC days (max 3) need a reason (send the doctor\u2019s letter to Alicia), and come off the targets.</li>
+            <li>Group or team KPI 1 = average of all its members.</li>
+          </ul>
+        </div>
+        <div>
+          <b>KPI 2 · Bookings (50)</b>
+          <ul>
+            <li>1 full deal = 1 mark. Everyone on the deal logs their own part and types their own % (their commission split). 60% = 0.6 mark.</li><li>Tick your role (closer, caller, ads) and write who you worked with. Did it all yourself? Type 100.</li>
+            <li>Based only on the number of valid bookings, not price, SPA, commission or booking fee.</li>
+            <li>KPI 2 = all your deal marks added up, maximum 50.</li>
+            <li>Group and team KPI 2 = average of their members\u2019 KPI 2.</li>
+            <li>Cancelled bookings don’t count.</li>
+          </ul>
+          <b style="display:block;margin-top:10px">Winner</b>
+          <ul><li>Team A vs Team B in each area. Higher KPI 1 + KPI 2 (out of 100) wins.</li><li>Check-in runs 1–31 October only.</li></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADMIN LOGIN -->
+  <section id="adminLogin" class="stack" hidden>
+    <div class="panel stack" style="max-width:420px">
+      <h2 style="margin:0">Back office login</h2>
+      <p class="note" style="margin:0">For Alicia only. Use the email and password you set up in Supabase.</p>
+      <form id="adminForm" class="stack" style="gap:10px">
+        <div><label class="label" for="admEmail">Email</label><input type="text" id="admEmail" autocomplete="username" class="field"></div>
+        <div><label class="label" for="admPass">Password</label><input type="password" id="admPass" autocomplete="current-password" class="field"></div>
+        <button class="btn" id="admGo" type="submit">Log in</button>
+        <p class="note" id="admMsg" style="margin:0" role="status"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- RULES (agents) -->
+  <section id="rules" class="stack" hidden>
+    <div class="panel">
+      <h2>How marks work</h2>
+      <div class="rules">
+        <div>
+          <b>KPI 1 · Daily tasks (50)</b>
+          <ul>
+            <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
+            <li>Learning video 9–10am. Appointments, reel, YouTube and bookings 10am–11:59pm.</li>
+            <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
+            <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Log every appointment you have; 2 a day count for marks. Every appointment = 1: just add the time, client name and project.</li>
+            <li>Reels: 1 a day with the link (its own submit), Monday to Friday only, 22 days</li>
+            <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
+            <li>YouTube: 1 link a week (Shorts or full video), 4 weeks: 5–11, 12–18, 19–25 and 26–31 Oct, target 4</li>
+            <li>MC days (max 3) need a reason (send the doctor\u2019s letter to Alicia), and come off the targets.</li>
+            <li>Group or team KPI 1 = average of all its members.</li>
+          </ul>
+        </div>
+        <div>
+          <b>KPI 2 · Bookings (50)</b>
+          <ul>
+            <li>1 full deal = 1 mark. Everyone on the deal logs their own part and types their own % (their commission split). 60% = 0.6 mark.</li><li>Tick your role (closer, caller, ads) and write who you worked with. Did it all yourself? Type 100.</li>
+            <li>Based only on the number of valid bookings, not price, SPA, commission or booking fee.</li>
+            <li>KPI 2 = all your deal marks added up, maximum 50.</li>
+            <li>Group and team KPI 2 = average of their members\u2019 KPI 2.</li>
+            <li>Cancelled bookings don’t count.</li>
+          </ul>
+          <b style="display:block;margin-top:10px">Winner</b>
+          <ul><li>Team A vs Team B in each area. Higher KPI 1 + KPI 2 (out of 100) wins.</li><li>Check-in runs 1–31 October only.</li></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="note foot">
+    <span>MADROX · 1–31 October 2026</span>
+    <span><button class="link" id="adminBtn">Back office</button> <button class="link" id="adminOut" hidden>Log out of back office</button></span>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  // ====== SETTINGS ======
+  const SUPABASE_URL='https://bazmntdntepgvnjmkywf.supabase.co';
+  const SUPABASE_KEY='sb_publishable_qy13-YaUj-4-qhnm7YAwjQ_OPW5cfCo';
+  const MAX_VIDEO_MB=2;
+  // KPI 2: 1 booking credit = 1 mark, max 50
+  const KPI2_MAX=50;
+  const kpi2Of=b=>Math.min(KPI2_MAX,Math.round(b*10)/10);
+  const progressOf=b=>Math.min(100,Math.round(b/KPI2_MAX*100));          // must match the storage limit in Supabase
+  // ======================
+
+  const APP_URL=location.origin+location.pathname+'#attend';
+  const YEAR=2026, MONTH=9, DAYS=31, VID_FROM=9*60, VID_TO=10*60, ATT_FROM=9*60+45, ATT_TO=10*60+1, OUT_TO=24*60, OPEN_AT=10*60, CLOSE_AT=24*60, MC_TO=21*60, MAX_MC=3;
+  const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dow=d=>new Date(YEAR,MONTH,d).getDay();
+  const isWeekday=d=>{const w=dow(d);return w>0&&w<6};
+  const key=d=>'d'+String(d).padStart(2,'0');
+  const WEEKS=[[5,11],[12,18],[19,25],[26,31]];   // YouTube weeks (none on 1-4 Oct)
+  const weekOf=d=>WEEKS.findIndex(w=>d>=w[0]&&d<=w[1])+1;
+  const WEEKDAYS=Array.from({length:DAYS},(_,i)=>i+1).filter(isWeekday).length;   // 22 in October 2026
+  const AREAS=['KL','Melaka & JB'], TEAMS=['A','B'];
+  const ROLE_ORDER={'leader senior':0,'senior':1,'junior':2};
+  const rm=n=>{n=Math.round(n);return n+(n===1?' booking':' bookings')};
+  const nfmt=n=>{n=Math.round(n*100)/100;return Number.isInteger(n)?String(n):n.toFixed(2).replace(/0$/,'')};
+  const cr=n=>nfmt(n)+(n===1?' mark':' marks');
+  // appointment roles: both = 1, setter = 0.5, attendee = 0.5
+  const ROLE={both:{u:1,l:'Set & met'},set:{u:0.5,l:'Setter'},meet:{u:0.5,l:'Attendee'}};
+  const unitOf=r=>1;   // every appointment = 1 (no more setter/attendee halves)
+  const roleTxt=r=>(ROLE[r&&r.role]||ROLE.both).l+' \u00b7 '+nfmt(unitOf(r));
+  // booking shares: closer 70%, caller 20%, ads 10%; an empty role goes to the closer
+  const SHARE={closer:0.7,caller:0.2,ads:0.1};
+  const ownShare=x=>x.share!=null?+x.share:SHARE.closer+(x.caller?0:SHARE.caller)+(x.ads?0:SHARE.ads);
+  const partTxt=x=>x.roles?x.roles.map(r=>({closer:'Closer',caller:'Caller',ads:'Ads'})[r]).join(' + ')+(x.pct!=null?' '+nfmt(x.pct)+'%':''):('Closer'+(x.caller?', caller '+nameOf(x.caller):' + caller')+(x.ads?', ads '+nameOf(x.ads):' + ads'));
+  const cnt=x=>Math.max(1,+x.count||1);
+  const nameOf=id=>id==='other'?'someone outside MADROX':((roster[id]||{}).name||id||'');
+  const f1=n=>(Math.round(n*10)/10).toFixed(1);
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const clone=o=>JSON.parse(JSON.stringify(o||{}));
+  const isUrl=u=>/^https?:\/\/\S+\.\S+/i.test(String(u||'').trim());
+  const link=u=>isUrl(u)?`<a href="${esc(u.trim())}" target="_blank" rel="noopener">${esc(u.trim().replace(/^https?:\/\/(www\.)?/,'').slice(0,40))}${u.trim().length>48?'…':''}</a>`:'<span class="note">no link</span>';
+  const kl=t=>new Date(t+8*3600e3);
+  const minsKL=t=>{const d=kl(t);return d.getUTCHours()*60+d.getUTCMinutes()};
+  const dayKL=t=>{const d=kl(t);return d.getUTCFullYear()===YEAR&&d.getUTCMonth()===MONTH?d.getUTCDate():-1};
+  const hhmm=t=>{const d=kl(t);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')};
+  const store={get(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch(_){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}},del(k){try{localStorage.removeItem(k)}catch(_){}}};
+
+  // this phone's private key (locks each name to one phone)
+  const DEVICE=(()=>{let d=store.get('madrox-device'); if(!d||String(d).length<20){const a=new Uint8Array(16);(window.crypto||{}).getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=Math.random()*256|0); d=Array.from(a,b=>b.toString(16).padStart(2,'0')).join(''); store.set('madrox-device',d);} return d;})();
+  const online=()=>navigator.onLine!==false;
+  function showOffline(){const n=$('notice'); if(!online()){n.hidden=false;n.textContent='No internet connection. Connect to Wi-Fi or mobile data to check in – the app uses internet time, not your phone’s clock.';} else if(n.dataset.kind!=='err'){n.hidden=true;}}
+  window.addEventListener('offline',showOffline); window.addEventListener('online',()=>{showOffline(); if(me) doLogin(me.id,me.pin,true);});
+
+  // ---------- state ----------
+  let sb=null, clock={day:0,test:false,now:Date.now(),at:Date.now()}, busy=false;
+  let roster={}, me=null, myState=null;      // agent session
+  let isAdmin=false, allStates={}, pins={}, phones={};   // back office
+  let teamAtt={}, teamAttAt=0, myCredits=[], practice=false, pData={}, pMe=null, pClock=630;
+  let draft=null, ui={}, revWho='', loginPick='';
+  let day=1;
+
+  function serverNow(){return Date.now()+(clock.now-clock.at);}
+  function klTodayFrom(t){const n=kl(t);const y=n.getUTCFullYear(),m=n.getUTCMonth(); if(y<YEAR||(y===YEAR&&m<MONTH))return 0; if(y>YEAR||m>MONTH)return 32; return n.getUTCDate();}
+  function today(){ if(practice) return day; if(clock.test) return clock.day; return klTodayFrom(serverNow()); }
+  function now(){ if(practice) return Date.UTC(YEAR,MONTH,day,0,0)-8*3600e3+pClock*60e3; if(clock.test){const t=serverNow();const m=minsKL(t);return Date.UTC(YEAR,MONTH,clock.day,0,0)-8*3600e3+m*60e3;} return serverNow(); }
+  const WIN={video:[VID_FROM,VID_TO],att:[ATT_FROM,ATT_TO],out:[ATT_FROM,OUT_TO],main:[OPEN_AT,CLOSE_AT]};
+  function openFor(k){ if(!practice&&clock.test) return true; const m=minsKL(now()); return m>=WIN[k][0]&&m<WIN[k][1]; }
+  function inWindow(){ return openFor('main'); }
+  const inR=(t,a,b)=>{const m=minsKL(t);return m>=a&&m<b};
+  function setClock(c){ if(c){clock={...c,at:Date.now()};} }
+  function myAgent(){ return practice?pMe:(me&&me.id); }
+  function dataOf(id){ if(practice) return pData[id]||{}; if(me&&id===me.id&&myState) return myState; return allStates[id]||teamAtt[id]||{}; }
+
+  // ---------- scoring ----------
+  function dayChecks(p,d){
+    const k=key(d), e=(p.days||{})[k], a=(p.att||{})[k], v=(p.vid||{})[k];
+    if(e&&e.mc) return {mc:true};
+    const qr=isWeekday(d)&&!!(a&&(a.admin||(a.in&&a.out&&dayKL(a.in)===d&&inR(a.in,ATT_FROM,ATT_TO)&&dayKL(a.out)===d&&inR(a.out,ATT_FROM,OUT_TO))));
+    const appt=e?Math.min(2,(e.appts||[]).filter(r=>r&&String(r.client||'').trim()).reduce((s,r)=>s+unitOf(r),0)):0;
+    const reel=isWeekday(d)&&!!(e&&isUrl(e.reel));
+    const video=!!(v&&(v.done||v.file)&&dayKL(v.at)===d&&inR(v.at,VID_FROM,VID_TO));
+    return {qr,appt,reel,video};
+  }
+  // bookings where this agent is the caller or ads person on someone else's booking
+  function taggedFor(id){
+    if(!id) return [];
+    if(!practice&&me&&id===me.id&&!isAdmin) return myCredits||[];
+    const src=practice?pData:allStates, out=[];
+    for(const from in src){ if(from===id) continue; const ss=(src[from]||{}).sales||{};
+      for(const sid in ss){ const x=ss[sid]; if(x&&(x.caller===id||x.ads===id)) out.push({...x,from,sid}); } }
+    return out;
+  }
+  function creditsOf(p,id){
+    let c=0;
+    for(const x of Object.values(p.sales||{})) if(!x.cancelled) c+=cnt(x)*ownShare(x);
+    for(const x of taggedFor(id)) if(!x.cancelled) c+=cnt(x)*((x.caller===id?SHARE.caller:0)+(x.ads===id?SHARE.ads:0));
+    return Math.round(c*100)/100;
+  }
+  const excusedOf=id=>Math.max(0,+((roster[id]||{}).excused||(me&&me.id===id?me.excused:0)||0));
+  function score(p,id){
+    let mc=0,mcWd=0,qr=0,appt=0,reel=0,vid=0; const ex=excusedOf(id);
+    for(let d=1;d<=DAYS;d++){const c=dayChecks(p,d); if(c.mc){mc++;if(isWeekday(d))mcWd++;continue;} if(c.qr)qr++; appt+=c.appt; if(c.reel)reel++; if(c.video)vid++;}
+    const yt=Object.values(p.yt||{}).filter(y=>y&&isUrl(y.url)).length;
+    const part=(done,target)=>target<=0?10:Math.min(10,done/target*10);
+    if(ex){ qr+=ex; vid+=ex; appt+=2*ex; reel+=ex; }   // private allowance: days counted as done
+    const t={qr:WEEKDAYS-mcWd, appt:2*(DAYS-mc), reel:WEEKDAYS-mcWd, video:DAYS-mc, yt:4};
+    const parts={qr:part(qr,t.qr),appt:part(appt,t.appt),reel:part(reel,t.reel),video:part(vid,t.video),yt:part(yt,t.yt)};
+    const kpi1=parts.qr+parts.appt+parts.reel+parts.video+parts.yt;
+    const sales=creditsOf(p,id);
+    return {done:{qr,appt:Math.round(appt*10)/10,reel,video:vid,yt},t,parts,kpi1,sales,mc,kpi2:kpi2Of(sales),prog:progressOf(sales)};
+  }
+
+  // ---------- server calls ----------
+  let flashT; function flash(m,keep){$('saving').textContent=m;clearTimeout(flashT);if(!keep)flashT=setTimeout(()=>$('saving').textContent='',4000);}
+  const errText=e=>(e&&(e.message||e.error_description))||'Something went wrong. Check your connection and try again.';
+  async function rpc(fn,args){ if(!sb) throw new Error('The app isn’t connected. Check your internet and reload.'); const {data,error}=await sb.rpc(fn,args||{}); if(error) throw error; return data; }
+  function mergeDeep(t,p){for(const k in p){const v=p[k];if(v&&typeof v==='object'&&!Array.isArray(v))t[k]=mergeDeep(t[k]&&typeof t[k]==='object'?t[k]:{},v);else t[k]=v}return t}
+
+  // run an agent action on the server (or locally in practice)
+  async function act(action,data,practicePatch,okMsg){
+    if(practice){ pData[pMe]=mergeDeep(clone(pData[pMe]),practicePatch); flash((okMsg||'Saved')+' (practice only)'); render(); return true; }
+    if(!online()){showOffline();lastActErr='No internet. Connect to Wi-Fi or mobile data first.';flash(lastActErr);return false;}
+    if(busy){ lastActErr='Still saving, wait a second.'; return false; } busy=true; flash('Saving…',true); render();
+    try{ const r=await rpc('agent_act',{p_id:me.id,p_pin:me.pin,p_device:DEVICE,p_action:action,p_data:data||{}}); myState=r.state; if(r.credits) myCredits=r.credits; setClock(r.clock); flash(okMsg||'Saved'); busy=false; draft=null; ui={}; render(); return true; }
+    catch(e){ busy=false; lastActErr=errText(e); flash(lastActErr); render(); return false; }
+  }
+  let lastActErr='';
+  async function upload(kind,blob,ext){
+    if(practice) return 'practice/'+kind;
+    const path=`${me.id}/${key(today())}-${kind}-${Date.now().toString(36)}.${ext}`;
+    const {error}=await sb.storage.from('proofs').upload(path,blob,{contentType:blob.type,upsert:false});
+    if(error) throw new Error(/size|large|exceed/i.test(error.message||'')?'That file is too big.':'Upload failed. Check your connection and try again.');
+    return path;
+  }
+  function compress(file,maxBytes=1000000){
+    return new Promise((res,rej)=>{
+      if(!file||!/^image\//.test(file.type)){rej(new Error('Please choose a photo.'));return;}
+      const url=URL.createObjectURL(file); const img=new Image();
+      img.onload=async()=>{URL.revokeObjectURL(url); let scale=Math.min(1,2000/Math.max(img.naturalWidth,img.naturalHeight)); const c=document.createElement('canvas'); const x=c.getContext('2d');
+        for(let i=0;i<6;i++){c.width=Math.round(img.naturalWidth*scale);c.height=Math.round(img.naturalHeight*scale);x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);
+          for(const q of [0.75,0.6,0.45]){const b=await new Promise(r=>c.toBlob(r,'image/jpeg',q)); if(b&&b.size<=maxBytes){res(b);return;}} scale*=0.75;}
+        rej(new Error('That photo is too large. Try another one.'));};
+      img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Could not read that photo. Try a JPG or PNG.'))};
+      img.src=url;
+    });
+  }
+
+  // ---------- identity / login ----------
+  function groupedOptions(sel,suffixFn){
+    const ids=Object.keys(roster).sort((a,b)=>{const A=roster[a],B=roster[b];return (A.area||'~').localeCompare(B.area||'~')||(A.team||'~').localeCompare(B.team||'~')||(A.group||'~').localeCompare(B.group||'~')||(ROLE_ORDER[A.role]??3)-(ROLE_ORDER[B.role]??3)||A.name.localeCompare(B.name)});
+    let out='',cur=null;
+    for(const id of ids){const p=roster[id]; const g=p.area?`${p.area} · Team ${p.team} · ${p.group}’s group`:'No team yet';
+      if(g!==cur){if(cur!==null)out+='</optgroup>';out+=`<optgroup label="${esc(g)}">`;cur=g;}
+      out+=`<option value="${esc(id)}"${id===sel?' selected':''}>${esc(p.name)}${p.role?' ('+esc(p.role)+')':''}${suffixFn?suffixFn(id):''}</option>`;}
+    return out+(cur!==null?'</optgroup>':'');
+  }
+  function sortedIds(){return Object.keys(roster).sort((a,b)=>(roster[a].name||'').localeCompare(roster[b].name||''))}
+  function teamLine(id){const p=roster[id];return p&&p.area?`${p.area} · Team ${p.team} · ${p.group}’s group${p.role?' · '+p.role:''}`:'';}
+  function renderId(){
+    const box=$('idBox');
+    if(practice){
+      box.innerHTML=`<div class="row"><div style="flex:1 1 200px"><label class="label" for="pWho">Practise as</label><select id="pWho"><option value="">Choose a name…</option>${groupedOptions(pMe)}</select></div>
+        <div style="flex:0 1 170px"><label class="label" for="pClock">Pretend time</label><select id="pClock">${[[510,'8:30am (closed)'],[570,'9:30am (video only)'],[630,'10:30am'],[750,'12:30pm'],[1050,'5:30pm'],[1110,'6:30pm'],[1290,'9:30pm (closed)']].map(([m,l])=>`<option value="${m}"${m===pClock?' selected':''}>${l}</option>`).join('')}</select></div></div>
+        <div class="note" style="margin-top:6px">${esc(teamLine(pMe))}</div>`;
+      return;
+    }
+    if(me){ box.innerHTML=`<div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="label">Checking in as</span><div class="who">${esc(me.name)}</div><div class="note">${esc(teamLine(me.id))}</div></div><button class="link" id="logout">Not you? Log out</button></div>${clock.test?'<p class="note" style="margin:6px 0 0"><b>Test mode is on</b> – the app pretends it’s '+clock.day+' October and ignores the 10am–9pm hours.</p>':''}`; return; }
+    if(!Object.keys(roster).length){ box.innerHTML='<p class="note" style="margin:0">Loading names…</p>'; return; }
+    box.innerHTML=`<label class="label" for="loginWho">Log in to check in</label>
+      <div class="pinrow"><select id="loginWho"><option value="">Choose your name…</option>${groupedOptions(loginPick)}</select>
+      <input type="password" id="loginPin" inputmode="numeric" maxlength="8" placeholder="PIN" class="field" autocomplete="one-time-code" aria-label="Your PIN">
+      <button class="btn" id="loginGo" ${busy?'disabled':''}>Log in</button></div>
+      <p class="note" style="margin:6px 0 0">Your 4-digit PIN comes from Alicia. Keep it private – it’s what stops others checking in for you.</p>`;
+  }
+
+  // ---------- calendar ----------
+  function renderDays(){
+    const id=myAgent(); const p=id?dataOf(id):{}; const t=today();
+    let h=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div class="dow">${d}</div>`).join('');
+    const lead=(dow(1)+6)%7; for(let i=0;i<lead;i++) h+='<div></div>';
+    for(let d=1;d<=DAYS;d++){
+      const c=dayChecks(p,d); let pct=0,st='future';
+      if(id){ if(c.mc){pct=100;st='mc'} else {const parts=isWeekday(d)?[c.qr,c.appt>=2,c.video,c.reel]:[c.appt>=2,c.video];pct=Math.round(parts.filter(Boolean).length/parts.length*100); st=d<t?(pct?'done':'missed'):d===t?'today':'future';} }
+      const lock=!practice&&!isAdmin&&d!==t;
+      h+=`<button class="day st-${st}${d===day?' sel':''}${isWeekday(d)?'':' we'}" data-day="${d}" aria-label="${d} October" ${lock?'disabled':''}>${d}<span class="bar"><i style="width:${pct}%"></i></span></button>`;
+    }
+    $('days').innerHTML=h;
+    $('dayTitle').textContent=`${DOW[dow(day)]} ${day} Oct${day===t?' · today':''}`;
+  }
+
+  // ---------- the day ----------
+  function card(title,status,body){return `<div class="panel dcard"><div class="row" style="justify-content:space-between"><h3>${title}</h3>${status||''}</div>${body}</div>`}
+  const chip=(ok,txt)=>`<span class="chip ${ok===true?'ok':ok===false?'bad':''}">${txt}</span>`;
+  function renderDayView(){
+    const box=$('dayView'); const id=myAgent(); const t=today();
+    if(!id){box.innerHTML='<div class="panel note">'+(practice?'Choose a name above to practise.':'Log in above to start checking in.')+'</div>';return;}
+    if(day>t){box.innerHTML=`<div class="banner">${t===0?'Check-in opens on Thursday 1 October.':'This day hasn’t started yet. You can check in on the day.'}</div>`;return;}
+    const tst=!practice&&clock.test, m=minsKL(now()), early=day===t&&!tst&&m<VID_FROM, closed=day===t&&!tst&&m>=CLOSE_AT, beforeTen=day===t&&!tst&&m<OPEN_AT;
+    if(early){box.innerHTML='<div class="banner">Check-in opens at 9:00am today (learning video 9\u201310am, everything else from 10:00am).</div>';return;}
+    const p=dataOf(id), k=key(day), live=day===t&&!closed;
+    const e=(p.days||{})[k], a=(p.att||{})[k]||{}, v=(p.vid||{})[k], wd=isWeekday(day);
+    if(e&&e.mc){ box.innerHTML=card('MC day',chip(true,'Excused'),`<p class="note" style="margin:0">Submitted at ${hhmm(e.at)} with a reason. All tasks are excused for this day.</p>`); return; }
+    if(!draft||draft.day!==day||draft.who!==id) draft={day,who:id,appts:[{time:'',client:'',note:'',role:'both',with:''},{time:'',client:'',note:'',role:'both',with:''}],reel:'',mcReason:'',mcImg:null,inImg:null};
+    const D=draft, dis=busy?'disabled':''; let html=closed?'<div class="banner">Check-in closed at 9:00pm. Anything not submitted today counts as missed. You can still sign out until 11:59pm.</div>':'';
+
+    // 1. Attendance
+    let att='';
+    if(!wd){ att='<p class="note" style="margin:0">No office attendance on Saturday and Sunday. It counts Monday to Friday only (22 days).</p>'; }
+    else if(a.admin){ att=`<p class="note" style="margin:0">Marked attended by Alicia.</p>`; }
+    else {
+      const canAtt=live&&openFor('att'), canOut=day===t&&openFor('out'), afterSix=day===t&&!tst&&m>=ATT_TO;
+      const inOk=a.in&&inR(a.in,ATT_FROM,ATT_TO), outOk=a.out&&dayKL(a.out)===day&&inR(a.out,ATT_FROM,OUT_TO);
+      att+=`<div class="task"><div><b>Sign in</b><small>Between 9:45am and 10:00am. Post the group photo in the group chat first.</small></div>${a.in?chip(inOk,'\u2713 '+hhmm(a.in)):''}</div>`;
+      if(!a.in&&canAtt){
+        att+=`<button class="btn" id="signIn" ${busy?'disabled':''}>\u2713 Sign in now</button>`;
+      } else if(!a.in) att+=`<p class="note" style="margin:0">${day===t&&!tst&&m<ATT_FROM?'Sign-in opens at 9:45am.':afterSix?'Sign-in closed at 10:00am, so no attendance mark today.':'No sign-in this day.'}</p>`;
+      att+=`<div class="task"><div><b>Sign out</b><small>After signing in, any time until 11:59pm</small></div>${a.out?chip(outOk,'\u2713 '+hhmm(a.out)):''}</div>`;
+      if(a.in&&!a.out){
+        att+= canOut?`<button class="btn" id="signOut" ${dis}>Sign out now</button>`:`<p class="note" style="margin:0">${day<t?'Not signed out by 11:59pm, so this day\u2019s attendance doesn\u2019t count.':''}</p>`;
+      }
+    }
+    const qrOk=dayChecks(p,day).qr;
+    html+=card('1 · Attendance',!wd?chip(null,'Weekend'):chip(a.admin||(a.in&&a.out)?qrOk:null,qrOk?'Counts':(a.in?'In progress':'Not yet')),att);
+
+    // 2. Learning video (every day)
+    {
+      const vOk=dayChecks(p,day).video;
+      if(v){ html+=card('2 · Learning video (9–10am)',chip(vOk,vOk?'Counts':'Not counted'),`<p style="margin:0">Checked in at ${hhmm(v.at)}</p>`); }
+      else if(live&&openFor('video')){
+        html+=card('2 · Learning video (9–10am)',chip(null,'Open now'),`<p class="note" style="margin:0 0 8px">Share today\u2019s learning video with your group, then check in here between 9:00am and 10:00am (every day).</p>
+          <button class="btn" id="vCheck" ${dis}>\u2713 I\u2019ve shared today\u2019s learning video</button>`);
+      } else html+=card('2 · Learning video (9–10am)',chip(false,'Missed'),'<p class="note" style="margin:0">No video check-in this day. It\u2019s only open 9:00\u201310:00am.</p>');
+    }
+
+    // 3. Appointments (one at a time) and 4. Reel link (own submit)
+    {
+      const ap=e&&!e.mc?(e.appts||[]).filter(r=>r&&r.client):[];
+      const units=ap.reduce((s,r)=>s+unitOf(r),0), counted=Math.min(2,units), n=ap.length+1;
+      const mcUsed=Object.values(p.days||{}).filter(x=>x&&x.mc).length;
+      if(live&&ui.mcOpen){
+        html+=card('MC day',chip(null,`${mcUsed}/${MAX_MC} used`),`
+          <label class="label" for="mcReason">Reason</label><textarea id="mcReason" rows="2" placeholder="e.g. Fever, clinic visit">${esc(D.mcReason)}</textarea>
+          <div class="row" style="margin-top:8px"><label class="filebtn">${D.mcImg?'Letter photo ready ✓':'Photo of doctor’s letter (optional – or send it to Alicia)'}<input type="file" id="mcFile" accept="image/*" hidden></label></div>
+          ${ui.mcConfirm?`<div class="confirm"><span>Submit MC for ${day} Oct? This locks the whole day.</span><div class="row"><button class="btn" id="mcYes" ${dis}>Yes, submit MC</button><button class="btn ghost" id="mcNo">Go back</button></div></div>`
+          :`<div class="row" style="margin-top:10px"><button class="btn" id="mcGo">Submit MC</button><button class="btn ghost" id="mcCancel">Cancel</button></div>`}`);
+      } else {
+        // appointments
+        let body=ap.length?`<div class="tasks">${ap.map((r,i)=>`<div class="task"><div><b>Appointment ${i+1} · ${esc(r.client)}</b><small>${[r.time?esc(r.time):'',r.note?esc(r.note):''].filter(Boolean).join(' \u00b7 ')||'\u2713 Logged'}</small></div>${chip(true,'✓ '+(r.at?hhmm(r.at):'Sent'))}</div>`).join('')}</div>`:'';
+        if(live&&beforeTen){ body+='<p class="note" style="margin:0">Appointments open at 10:00am.</p>'; }
+        else if(live){
+          const r=D.appts[0], others=Object.keys(roster).filter(x=>x!==id).sort((x,y)=>roster[x].name.localeCompare(roster[y].name));
+          body+=`<div class="label" style="margin:${ap.length?'12px':'0'} 0 6px">Appointment ${n}</div>
+          <div class="apptbox"><div class="appt"><input type="time" id="at-0" data-a="0" data-f="time" value="${esc(r.time)}" aria-label="Appointment ${n} time"><input type="text" id="ac-0" data-a="0" data-f="client" value="${esc(r.client)}" placeholder="Client name" aria-label="Appointment ${n} client"><input type="text" id="an-0" data-a="0" data-f="note" value="${esc(r.note)}" placeholder="Project / details" aria-label="Appointment ${n} details"></div>
+            </div>
+          <p class="note" style="margin:6px 0 0">Every appointment = 1. You need at least 2 a day for marks. Add more any time; they\u2019re saved for your records. Open until 11:59pm.</p>
+          <button class="btn big" id="apYes" style="margin-top:10px" ${dis}>Submit appointment ${n}</button>
+          <p class="note" style="margin:4px 0 0">Saved straight away. You can\u2019t change it after.</p>`;
+        } else if(!ap.length) body+='<p class="note" style="margin:0">No appointments this day.</p>';
+        if(live&&!beforeTen&&!e&&(tst||m<MC_TO)) body+=`<button class="link" id="mcOpen" style="margin-top:10px;display:block" ${mcUsed>=MAX_MC?'disabled':''}>${mcUsed>=MAX_MC?'All 3 MC days used':'On MC today?'}</button>`;
+        if(ui.apMsg) body=`<div class="banner" style="margin:0 0 8px;${ui.apMsg.ok?'background:var(--good-soft);color:var(--good)':''}">${esc(ui.apMsg.text)}</div>`+body;
+        html+=card('3 · Appointments',chip(counted>=2?true:(live?null:false),`${nfmt(counted)}/2 counted`),body);
+        // reel
+        if(!wd) html+=card('4 · Reel link',chip(null,'Weekend'),'<p class="note" style="margin:0">No reel needed on Saturday and Sunday.</p>');
+        else if(e&&e.reel) html+=card('4 · Reel link',chip(true,'✓ '+(e.reelAt?hhmm(e.reelAt):'Submitted')),`<p style="margin:0">${link(e.reel)}</p>`);
+        else if(live&&beforeTen) html+=card('4 · Reel link',chip(null,'Opens 10am'),'<p class="note" style="margin:0">The reel link opens at 10:00am.</p>');
+        else if(live) html+=card('4 · Reel link',chip(null,'Not yet'),`<input type="url" id="reelUrl" placeholder="https://www.instagram.com/reel/…" value="${esc(D.reel)}">
+          <p class="note" style="margin:4px 0 0">Monday to Friday. No link, no reel mark for today.</p>
+          ${ui.rlMsg?`<div class="banner" style="margin:8px 0 0">${esc(ui.rlMsg.text)}</div>`:''}
+          <button class="btn" id="rlYes" style="margin-top:10px" ${dis}>Submit reel link</button>`);
+        else html+=card('4 · Reel link',chip(false,'Missed'),'<p class="note" style="margin:0">No reel link this day.</p>');
+      }
+    }
+    box.innerHTML=html;
+  }
+
+  const apptLabel=u=>`Appointments \u00b7 ${nfmt(Math.min(u,2))}/2 counted${u>2?' (extra ones don\u2019t add marks)':''}`;
+  function renderYT(){
+    const id=myAgent(); const t=today(); const yt=(id&&dataOf(id).yt)||{}; const cw=t>=1&&t<=DAYS?weekOf(t):0;
+    const rows=WEEKS.map((w,i)=>{const k='w'+(i+1), y=yt[k]; const ok=y&&isUrl(y.url);
+      return `<div class="task"><div><b>${w[0]}–${w[1]} Oct</b><small>${ok?link(y.url):i+1===cw?'This week':i+1<cw?'Closed':'Opens '+w[0]+' Oct'}</small></div>${ok?chip(true,'✓ Posted'):i+1<cw?chip(false,'Missed'):chip(null,i+1===cw?'Open':'Later')}</div>`}).join('');
+    const y=cw&&yt['w'+cw];
+    const form=id&&cw&&inWindow()&&!(y&&isUrl(y.url))?`<div class="row" style="margin-top:8px"><input type="url" id="ytUrl" placeholder="YouTube link for this week" style="flex:1 1 220px"><button class="btn" id="ytSend" ${busy?'disabled':''}>Submit</button></div>`:'';
+    $('ytBox').innerHTML=`<div class="tasks">${rows}</div>${form}<p class="note" style="margin:8px 0 0">One video per week, Shorts or full video, with its link. 4 weeks: 5–11, 12–18, 19–25, 26–31 Oct. Once submitted, it’s locked until next week.</p>`;
+  }
+  const myRoles=()=>[['rCloser','closer'],['rCaller','caller'],['rAds','ads']].filter(([i])=>$(i)&&$(i).checked).map(([,r])=>r);
+  function renderSales(){
+    const id=myAgent(); const t=today(); const open=id&&t>=1&&t<=DAYS&&inWindow();
+    $('saleForm').hidden=!open;
+    if(open){ const p=+$('salePct').value;
+      $('saleShare').textContent=p>0&&p<=100?`You get ${nfmt(p/100)} mark for this deal (1 full deal = 1 mark).`:'Type your % of this deal, e.g. 60 if your commission split is 60%.'; }
+    $('saleHint').textContent=!id?'Log in to add bookings.':open?'Everyone on the deal adds their own part and their own %. 1 full deal = 1 mark, so 60% = 0.6 mark. Write the project and who you worked with. Saved with today’s date and can’t be edited. Ask Alicia if a deal is cancelled.':(t>=1&&t<=DAYS?'Bookings can be added between 10:00am and 11:59pm.':'Bookings can be added from 1 to 31 October.');
+    const own=Object.entries((id&&dataOf(id).sales)||{}).map(([sid,x])=>({...x,sid,mine:true}));
+    const list=own.concat(taggedFor(id)).sort((a,b)=>(a.day||0)-(b.day||0)||(a.at||0)-(b.at||0));
+    $('sales').innerHTML=list.length?list.map(x=>{ const sh=x.mine?ownShare(x):((x.caller===id?SHARE.caller:0)+(x.ads===id?SHARE.ads:0));
+      const role=x.mine?(partTxt(x)+(x.with?' · with '+x.with:'')):[x.caller===id?'Caller':'',x.ads===id?'Ads':''].filter(Boolean).join(' + ')+' for '+nameOf(x.from);
+      return `<div class="sale${x.cancelled?' x':''}"><span>${x.day?x.day+' Oct · ':''}${esc(x.note||'Booking')}${cnt(x)>1?' × '+cnt(x):''}<br><span class="note">${esc(role)}${x.cancelled?' · cancelled':''}</span></span><span>${x.cancelled?'0':cr(cnt(x)*sh)}</span></div>`; }).join(''):'<p class="note" style="margin:0">No bookings yet.</p>';
+  }
+  function renderMine(){
+    const id=myAgent(); const box=$('mine');
+    if(!id){box.innerHTML='<p class="note" style="margin:0">Your marks appear here once you’re logged in.</p>';return;}
+    const s=score(dataOf(id),id);
+    const cell=(l,v,sub)=>`<div><span class="label">${l}</span><strong>${v}</strong><span class="note">${sub}</span></div>`;
+    box.innerHTML=cell('KPI 1',f1(s.kpi1),'out of 50')+cell('Attendance',f1(s.parts.qr),`${s.done.qr}/${s.t.qr} days`)+cell('Appts',f1(s.parts.appt),`${s.done.appt}/${s.t.appt}`)+cell('Reels',f1(s.parts.reel),`${s.done.reel}/${s.t.reel}`)+cell('Learning video',f1(s.parts.video),`${s.done.video}/${s.t.video}`)+cell('YouTube',f1(s.parts.yt),`${s.done.yt}/4`)+cell('My deals',nfmt(s.sales),'your % added up (1 deal = 1)')+cell('KPI 2',f1(s.kpi2),`out of 50 \u00b7 ${s.prog}% progress`)+cell('My total',f1(s.kpi1+s.kpi2),'out of 100');
+  }
+
+  // ---------- leaderboard (back office) ----------
+  function groupsOf(){
+    const out={};
+    for(const id of Object.keys(roster)){const p=roster[id]; if(!p.area||!p.team||!p.group) continue; const k=p.area+'|'+p.team+'|'+p.group; (out[k]=out[k]||{area:p.area,team:p.team,group:p.group,ids:[]}).ids.push(id);}
+    return Object.values(out).map(g=>{
+      g.ids.sort((a,b)=>(ROLE_ORDER[roster[a].role]??3)-(ROLE_ORDER[roster[b].role]??3)||roster[a].name.localeCompare(roster[b].name));
+      g.ss=g.ids.map(id=>({id,s:score(dataOf(id),id)}));
+      g.kpi1=g.ss.reduce((a,x)=>a+x.s.kpi1,0)/g.ss.length; g.kpi2=g.ss.reduce((a,x)=>a+x.s.kpi2,0)/g.ss.length; g.sales=g.ss.reduce((a,x)=>a+x.s.sales,0); return g;
+    });
+  }
+  function areaBoard(area,groups){
+    const gs=groups.filter(g=>g.area===area);
+    gs.forEach(g=>{g.total=g.kpi1+g.kpi2});
+    const teams=TEAMS.map(t=>{const tg=gs.filter(g=>g.team===t).sort((a,b)=>b.total-a.total);const all=tg.flatMap(g=>g.ss);
+      return {team:t,groups:tg,n:all.length,kpi1:all.length?all.reduce((a,x)=>a+x.s.kpi1,0)/all.length:0,kpi2:all.length?all.reduce((a,x)=>a+x.s.kpi2,0)/all.length:0,sales:all.reduce((a,x)=>a+x.s.sales,0)}});
+    teams.forEach(t=>{t.total=t.kpi1+t.kpi2}); return teams;
+  }
+  function renderBoard(){
+    if(!isAdmin&&!practice){$('pairs').innerHTML='';return;}
+    const groups=groupsOf();
+    const tag=id=>{const r=roster[id].role;return (r==='leader senior'?' <span class="pill">leader</span>':r==='senior'?' <span class="pill">senior</span>':'')};
+    $('pairs').innerHTML=AREAS.map(area=>{
+      const teams=areaBoard(area,groups); const lead=teams[0].total===teams[1].total?null:(teams[0].total>teams[1].total?'A':'B');
+      return `<div class="panel stack"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(area)}</h2><span class="note">Team A vs Team B</span></div>
+        <div class="vs">${teams.map(t=>`<div class="tcard${lead===t.team&&t.total>0?' lead':''}">
+          <div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="label">Team</span><div class="tname">${t.team}</div></div><div class="total">${f1(t.total)}<small>of 100 · ${t.n} agents</small></div></div>
+          <div class="split" style="grid-column:auto"><span class="pill k1">KPI 1 · ${f1(t.kpi1)}/50</span><span class="pill k2">KPI 2 · ${f1(t.kpi2)}/50</span><span class="pill">${cr(t.sales)}</span></div>
+          <div class="glist">${t.groups.map(g=>`<details class="grp"><summary><span><b>${esc(roster[g.ids[0]].name)}’s group</b><span class="pmeta"> · ${g.ids.map(id=>esc(roster[id].name)).join(', ')}</span></span><span class="gscore">${f1(g.total)}</span></summary>
+            <div class="tbl"><table><thead><tr><th>Name</th><th class="n">Attend</th><th class="n">Appts</th><th class="n">Reels</th><th class="n">10am</th><th class="n">YT</th><th class="n">KPI 1</th><th class="n">Bookings</th><th class="n">KPI 2</th></tr></thead>
+            <tbody>${g.ss.map(({id,s})=>`<tr><td>${esc(roster[id].name)}${tag(id)}${s.mc?` <span class="note">(${s.mc} MC)</span>`:''}</td><td class="n">${s.done.qr}/${s.t.qr}</td><td class="n">${s.done.appt}/${s.t.appt}</td><td class="n">${s.done.reel}/${s.t.reel}</td><td class="n">${s.done.video}/${s.t.video}</td><td class="n">${s.done.yt}/4</td><td class="n">${f1(s.kpi1)}</td><td class="n">${s.sales}</td><td class="n">${f1(s.kpi2)}</td></tr>`).join('')}</tbody></table></div>
+            <p class="note" style="margin:6px 0 0">Group: KPI 1 ${f1(g.kpi1)} + KPI 2 ${f1(g.kpi2)} (${cr(g.sales)})</p></details>`).join('')||'<p class="note">No groups yet.</p>'}</div></div>`).join('')}</div></div>`;
+    }).join('');
+    const un=Object.keys(roster).filter(id=>!(roster[id].area&&roster[id].team&&roster[id].group)).map(id=>roster[id].name).sort();
+    $('unpaired').textContent=un.length?`Not in a team yet (${un.length}): ${un.join(', ')}`:'';
+  }
+
+  function renderTeam(){
+    const ids=Object.keys(roster).sort((a,b)=>{const A=roster[a],B=roster[b];return (A.area||'~').localeCompare(B.area||'~')||(A.team||'~').localeCompare(B.team||'~')||(A.group||'~').localeCompare(B.group||'~')||(ROLE_ORDER[A.role]??3)-(ROLE_ORDER[B.role]??3)});
+    $('teamRows').innerHTML=ids.map(id=>{const p=roster[id]; const st=allStates[id]; const n=st?Object.keys(st.days||{}).length:0;
+      return `<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.area||'–')}</td><td>${esc(p.team||'–')}</td><td>${esc(p.group||'–')}</td><td>${esc(p.role||'–')}</td><td><code>${esc(pins[id]||'–')}</code></td><td>${phones[id]?`<span class="pill k1">Locked</span> <button class="link" data-reset="${esc(id)}">Reset phone</button>`:'<span class="note">not yet</span>'}</td><td>${n?n+' day'+(n>1?'s':''):'<span class="note">none yet</span>'}</td></tr>`}).join('');
+    $('teamHint').textContent='Send each agent their own PIN privately. Each name locks to the first phone that logs in. If an agent changes phone or clears their browser, tap Reset phone. To change someone’s team, group or PIN, edit the “agents” table in Supabase (Table Editor), then press Refresh.';
+    $('countLine').textContent=Object.keys(roster).length?`${Object.keys(roster).length} agents`:'';
+  }
+
+  // ---------- review (back office) ----------
+  const signed={};
+  async function openFile(path,btn){
+    if(!path||path.startsWith('practice/')) return;
+    btn.textContent='Opening…';
+    try{ if(!signed[path]){const {data,error}=await sb.storage.from('proofs').createSignedUrl(path,3600); if(error) throw error; signed[path]=data.signedUrl;}
+      const a=document.createElement('a'); a.href=signed[path]; a.target='_blank'; a.rel='noopener'; a.textContent='Open'; btn.replaceWith(a); a.click(); }
+    catch(e){ btn.textContent='Could not open'; }
+  }
+  const fileBtn=(path,label)=>path?`<button class="link" data-file="${esc(path)}">${label}</button>`:'';
+  function renderReview(){
+    if(!isAdmin){ $('revBody').innerHTML=''; return; }
+    const sel=$('revWho');
+    if(document.activeElement!==sel) sel.innerHTML='<option value="">Choose an agent…</option>'+groupedOptions(revWho,id=>allStates[id]?'':' – no check-ins yet');
+    const body=$('revBody'); if(!revWho){body.innerHTML='';return;}
+    const p=allStates[revWho]||{}; const t=Math.min(DAYS,Math.max(1,klTodayFrom(serverNow()))); const last=clock.test?DAYS:t; const s=score(p,revWho);
+    let rows='';
+    for(let d=1;d<=last;d++){
+      const k=key(d), e=(p.days||{})[k], a=(p.att||{})[k]||{}, v=(p.vid||{})[k], c=dayChecks(p,d);
+      if(e&&e.mc){rows+=`<tr><td>${d} ${DOW[dow(d)]}</td><td colspan="4"><b>MC</b> · ${esc(e.reason||'')} ${fileBtn(e.file,'View letter')} <button class="link" data-edopen="${d}" data-who="${esc(revWho)}">Edit day</button></td></tr>`; if(recEdit===revWho+'|'+d) rows+=`<tr><td colspan="5" style="white-space:normal">${recEditor(revWho,d)}</td></tr>`; continue;}
+      const attCell=!isWeekday(d)?'<span class="note">weekend</span>':a.admin?'Marked by you':`In ${a.in?hhmm(a.in):'–'} → Out ${a.out?hhmm(a.out):'–'}${a.in&&!a.out?' <span class="note">(no sign-out, not counted)</span>':''} ${fileBtn(a.photo,'Photo')}`;
+      rows+=`<tr><td>${d} ${DOW[dow(d)]}</td>
+        <td>${isWeekday(d)?chip(c.qr,c.qr?'✓':'✗')+' ':''}${attCell}${!c.qr&&isWeekday(d)?` <button class="link" data-mark="${d}">Mark attended</button>`:''}${isWeekday(d)?` <button class="link" data-attedit="${d}" data-who="${esc(revWho)}">Edit times</button>`:''} <button class="link" data-edopen="${d}" data-who="${esc(revWho)}">Edit day</button>${a.edited?' <span class="note">(edited)</span>':''}</td>
+        <td>${v?`${chip(c.video,hhmm(v.at))} ${fileBtn(v.file,'Watch')}`:'–'}</td>
+        <td style="white-space:normal">${e?(e.appts||[]).filter(r=>r.client).map(r=>`${esc(r.time||'')} ${esc(r.client)}${r.note?' · '+esc(r.note):''}`).join('<br>')||'–':'–'}</td>
+        <td>${e?link(e.reel):'–'}</td></tr>`;
+      if(attEdit===revWho+'|'+d) rows+=`<tr><td colspan="5">${attEditor(revWho,d)}</td></tr>`;
+      if(recEdit===revWho+'|'+d) rows+=`<tr><td colspan="5" style="white-space:normal">${recEditor(revWho,d)}</td></tr>`;
+    }
+    const sales=Object.entries(p.sales||{}).map(([sid,x])=>`<div class="sale${x.cancelled?' x':''}"><span>${x.day} Oct · ${esc(x.note||'Booking')} · <b>${rm(cnt(x))}</b><br><span class="note">${esc(partTxt(x))}${x.with?' · with '+esc(x.with):''} · ${cr(cnt(x)*ownShare(x))}</span></span><span><button class="link" data-cancel="${esc(sid)}" data-val="${x.cancelled?'0':'1'}">${x.cancelled?'Restore':'Mark cancelled'}</button></span></div>`).join('')
+      +taggedFor(revWho).map(x=>`<div class="sale${x.cancelled?' x':''}"><span>${x.day} Oct · ${esc(x.note||'Booking')} · <b>${rm(cnt(x))}</b><br><span class="note">${[x.caller===revWho?'Caller':'',x.ads===revWho?'Ads':''].filter(Boolean).join(' + ')} on ${esc(nameOf(x.from))}\u2019s booking · ${cr(cnt(x)*((x.caller===revWho?SHARE.caller:0)+(x.ads===revWho?SHARE.ads:0)))}</span></span><span class="note">${x.cancelled?'cancelled':''}</span></div>`).join('')||'<p class="note" style="margin:0">No bookings.</p>';
+    const mcDays=Object.entries(p.days||{}).filter(([,x])=>x&&x.mc).map(([k,x])=>+k.slice(1)).sort((a,b)=>a-b);
+    const mcBox=`<div class="panel"><h2>MC days \u00b7 ${mcDays.length}/${MAX_MC}</h2>
+      ${mcDays.length?`<div class="sales">${mcDays.map(d=>{const x=p.days[key(d)];return `<div class="sale"><span>${DOW[dow(d)]} ${d} Oct \u00b7 ${esc(x.reason||'')}${x.admin?' <span class="note">(marked by you)</span>':''}</span><button class="link" data-mcoff="${d}">Remove</button></div>`}).join('')}</div>`:'<p class="note" style="margin:0">No MC days.</p>'}
+      ${mcDays.length<MAX_MC?`<div class="row" style="margin-top:10px"><select id="mcDay" class="field" style="width:auto" aria-label="MC day">${Array.from({length:DAYS},(_,i)=>i+1).filter(d=>!mcDays.includes(d)).map(d=>`<option value="${d}">${DOW[dow(d)]} ${d} Oct</option>`).join('')}</select><input id="mcWhy" class="field" style="flex:1 1 160px" placeholder="Reason (e.g. approved leave)"><button class="btn" id="mcMark">Mark MC</button></div>
+      <p class="note" style="margin:6px 0 0">An MC day excuses every task that day and lowers this agent\u2019s targets. You can mark future days too. Maximum 3.</p>`:''}</div>`;
+    const yt=WEEKS.map((w,i)=>{const y=(p.yt||{})['w'+(i+1)];return `<div>${w[0]}–${w[1]} Oct: ${y&&y.url?link(y.url):'–'}</div>`}).join('');
+    body.innerHTML=`<div class="panel"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(roster[revWho].name)}</h2><span class="pill k1">KPI 1 · ${f1(s.kpi1)}/50</span></div>
+      <div class="tbl" style="margin-top:10px"><table><thead><tr><th>Day</th><th>Attendance</th><th>10am video</th><th>Appointments</th><th>Reel</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+      ${mcBox}<div class="panel"><h2>YouTube</h2>${yt}</div><div class="panel"><h2>Bookings \u00b7 ${cr(s.sales)}</h2><div class="sales">${sales}</div></div>`;
+  }
+
+  // ---------- manual attendance editing (back office) ----------
+  let attEdit='', attDraft={};
+  function attEditor(id,d){
+    const a=(dataOf(id).att||{})[key(d)]||{}, dr=attDraft[id+'|'+d]||{};
+    const vi=dr.in!=null?dr.in:(a.in?hhmm(a.in):''), vo=dr.out!=null?dr.out:(a.out?hhmm(a.out):'');
+    return `<div class="atted"><label>Sign in<input type="time" id="ei" value="${esc(vi)}"></label><label>Sign out<input type="time" id="eo" value="${esc(vo)}"></label>
+      <button class="btn" data-attsave="${d}" data-who="${esc(id)}">Save</button><button class="btn ghost" data-attclear="${d}" data-who="${esc(id)}">Clear day</button><button class="link" data-attcancel="1">Cancel</button>
+      <p class="note">${esc((roster[id]||{}).name||'')} \u00b7 ${DOW[dow(d)]} ${d} Oct. Counts when sign in is 9:45\u201310:00am and sign out is by 11:59pm. To count it anyway, use Mark attended.</p></div>`;
+  }
+  // full day editor
+  let recEdit='', edDraft={}, edAppts=[], edMsg=null;
+  const edV=(f,def)=>edDraft[f]!=null?edDraft[f]:def;
+  function openRecEdit(id,d){ recEdit=id+'|'+d; edDraft={}; edMsg=null; const e=(dataOf(id).days||{})[key(d)]||{}; edAppts=JSON.parse(JSON.stringify((e.appts||[]).filter(r=>r&&r.client))); attEdit=''; render(); }
+  function recEditor(id,d){
+    const p=dataOf(id), k=key(d), a=(p.att||{})[k]||{}, v=(p.vid||{})[k], e=(p.days||{})[k]||{}, wd=isWeekday(d), wk=weekOf(d), y=wk?(p.yt||{})['w'+wk]:null, mc=!!e.mc;
+    const others=Object.keys(roster).filter(x=>x!==id).sort((x,y)=>roster[x].name.localeCompare(roster[y].name));
+    const btn=(what,label)=>`<button class="btn" data-ed="${what}" data-who="${esc(id)}" data-day="${d}">${label}</button>`;
+    let h=`<div class="edpanel"><div class="row" style="justify-content:space-between"><b>Edit ${esc((roster[id]||{}).name||'')} \u00b7 ${DOW[dow(d)]} ${d} Oct</b><button class="link" data-edclose="1">Close</button></div>`;
+    if(edMsg) h+=`<div class="banner" style="margin:6px 0;${edMsg.ok?'background:var(--good-soft);color:var(--good)':''}">${esc(edMsg.text)}</div>`;
+    if(wd&&!mc) h+=`<div class="edsec"><h4>Sign in / sign out</h4><div class="edrow"><input type="time" id="ed-in" value="${esc(edV('ed-in',a.in?hhmm(a.in):''))}" aria-label="Sign in"><input type="time" id="ed-out" value="${esc(edV('ed-out',a.out?hhmm(a.out):''))}" aria-label="Sign out">${btn('att','Save')}</div><span class="xs">Empty sign-in = clear the day. Counts when sign in is 9:45\u201310:00am and sign out by 11:59pm.</span></div>`;
+    if(!mc) h+=`<div class="edsec"><h4>Learning video</h4><div class="edrow"><input type="time" id="ed-vid" value="${esc(edV('ed-vid',v&&v.at?hhmm(v.at):''))}" aria-label="Video time">${btn('video','Save')}</div><span class="xs">Empty = clear. Counts when the time is 9:00\u201310:00am.</span></div>`;
+    if(!mc) h+=`<div class="edsec"><h4>Appointments</h4>${edAppts.map((r,i)=>`<div class="edrow"><input type="time" data-ei="${i}" data-ef="time" value="${esc(r.time||'')}" aria-label="Time"><input type="text" data-ei="${i}" data-ef="client" value="${esc(r.client||'')}" placeholder="Client"><input type="text" data-ei="${i}" data-ef="note" value="${esc(r.note||'')}" placeholder="Details"><button class="link" data-edrm="${i}">Remove</button></div>`).join('')||'<span class="xs">No appointments.</span>'}
+      <div class="edrow">${'<button class="btn ghost" data-edaddappt="1">+ Add appointment</button>'}${btn('appts','Save appointments')}</div></div>`;
+    if(wd&&!mc) h+=`<div class="edsec"><h4>Reel link</h4><div class="edrow"><input type="url" id="ed-reel" value="${esc(edV('ed-reel',e.reel||''))}" placeholder="https://… (empty = clear)">${btn('reel','Save')}</div></div>`;
+    if(wk) h+=`<div class="edsec"><h4>YouTube \u00b7 ${WEEKS[wk-1][0]}\u2013${WEEKS[wk-1][1]} Oct</h4><div class="edrow"><input type="url" id="ed-yt" value="${esc(edV('ed-yt',y&&y.url||''))}" placeholder="https://… (empty = clear)">${btn('yt','Save')}</div></div>`;
+    const bk=Object.entries(p.sales||{}).filter(([,x])=>x.day===d);
+    h+=`<div class="edsec"><h4>Bookings on this day</h4>${bk.map(([sid,x])=>`<div class="edrow"><span style="flex:1 1 200px">${cnt(x)} \u00d7 ${esc(x.note||'Booking')} \u00b7 ${esc(partTxt(x))}${x.with?' \u00b7 with '+esc(x.with):''}${x.cancelled?' \u00b7 cancelled':''}</span><button class="link" data-eddel="${esc(sid)}" data-who="${esc(id)}" data-day="${d}">Delete</button></div>`).join('')||'<span class="xs">No bookings.</span>'}
+      <div class="edrow"><input type="number" id="ed-bcount" min="1" max="20" value="${esc(edV('ed-bcount','1'))}" style="width:64px" aria-label="How many"><input type="text" id="ed-bnote" value="${esc(edV('ed-bnote',''))}" placeholder="Project / unit"><input type="number" id="ed-bpct" min="1" max="100" value="${esc(edV('ed-bpct',''))}" placeholder="%" style="width:70px" aria-label="Percent"></div>
+      <div class="edrow">${['closer','caller','ads'].map(r=>`<label class="tick"><input type="checkbox" id="ed-r-${r}"${edV('ed-r-'+r,false)?' checked':''}> ${r[0].toUpperCase()+r.slice(1)}</label>`).join('')}<input type="text" id="ed-bwith" value="${esc(edV('ed-bwith',''))}" placeholder="With whom">${btn('sale_add','Add booking')}</div></div>`;
+    if(mc) h+='<span class="xs">This is an MC day. To edit tasks, remove the MC day in Review first.</span>';
+    return h+'</div>';
+  }
+  async function edSave(t){
+    const id=t.dataset.who, d=+t.dataset.day, what=t.dataset.ed; let data={};
+    const g=x=>($(x)||{}).value||'';
+    if(what==='att'){ const vin=g('ed-in'), vout=g('ed-out'); t.textContent='Saving\u2026';
+      try{ allStates[id]=await rpc('admin_att',{p_id:id,p_day:d,p_in:vin,p_out:vin?vout:''}); delete edDraft['ed-in']; delete edDraft['ed-out']; edMsg={ok:true,text:'\u2713 Sign in / sign out saved'}; }catch(err){ edMsg={ok:false,text:'Not saved: '+errText(err)}; } render(); return; }
+    if(what==='video') data={time:g('ed-vid')};
+    if(what==='appts') data={appts:edAppts.filter(r=>String(r.client||'').trim())};
+    if(what==='reel') data={reel:g('ed-reel').trim()};
+    if(what==='yt') data={week:weekOf(d),url:g('ed-yt').trim()};
+    if(what==='sale_add'){ const roles=['closer','caller','ads'].filter(r=>$('ed-r-'+r)&&$('ed-r-'+r).checked);
+      data={note:g('ed-bnote').trim(),count:+g('ed-bcount')||1,pct:+g('ed-bpct'),roles,with:g('ed-bwith').trim()}; }
+    t.textContent='Saving\u2026';
+    try{ allStates[id]=await rpc('admin_edit',{p_id:id,p_day:d,p_what:what,p_data:data});
+      if(what==='sale_add') ['ed-bnote','ed-bpct','ed-bwith','ed-bcount','ed-r-closer','ed-r-caller','ed-r-ads'].forEach(x=>delete edDraft[x]); else Object.keys(edDraft).forEach(x=>{ if(x.indexOf('ed-'+(what==='video'?'vid':what))===0) delete edDraft[x]; });
+      if(what==='appts'){ const e=(allStates[id].days||{})[key(d)]||{}; edAppts=JSON.parse(JSON.stringify(e.appts||[])); }
+      edMsg={ok:true,text:'\u2713 Saved'}; }
+    catch(err){ edMsg={ok:false,text:'Not saved: '+errText(err)}; }
+    render();
+  }
+  document.addEventListener('input',e=>{ const t=e.target; if(!recEdit) return;
+    if(t.dataset&&t.dataset.ei!==undefined){ edAppts[+t.dataset.ei][t.dataset.ef]=t.value; return; }
+    if(t.id&&t.id.indexOf('ed-')===0) edDraft[t.id]=t.type==='checkbox'?t.checked:t.value; });
+  document.addEventListener('change',e=>{ const t=e.target; if(recEdit&&t.type==='checkbox'&&t.id&&t.id.indexOf('ed-')===0) edDraft[t.id]=t.checked; });
+
+  async function attClick(e){
+    const T=e.target, D=T.dataset||{};
+    if(D.edopen){ openRecEdit(D.who,+D.edopen); return true; }
+    if(D.edclose){ recEdit=''; edDraft={}; render(); return true; }
+    if(D.edaddappt){ edAppts.push({time:'',client:'',note:'',role:'both',with:''}); render(); return true; }
+    if(D.edrm!==undefined){ edAppts.splice(+D.edrm,1); render(); return true; }
+    if(D.ed){ await edSave(T); return true; }
+    if(D.eddel){ if(T.dataset.sure!=='1'){T.dataset.sure='1';T.textContent='Tap again to delete';return true;}
+      T.textContent='Deleting\u2026'; try{ allStates[D.who]=await rpc('admin_edit',{p_id:D.who,p_day:+D.day,p_what:'sale_del',p_data:{sid:D.eddel}}); flash('Booking deleted'); }catch(err){flash(errText(err));} render(); return true; }
+    const t=e.target, ds=t.dataset||{};
+    if(ds.attedit){ attEdit=ds.who+'|'+ds.attedit; render(); return true; }
+    if(ds.attcancel){ attEdit=''; render(); return true; }
+    if(ds.attsave||ds.attclear){ const id=ds.who, d=+(ds.attsave||ds.attclear), clear=!!ds.attclear;
+      const vin=clear?'':($('ei')||{}).value||'', vout=clear?'':($('eo')||{}).value||'';
+      if(!clear&&!vin){flash('Enter a sign-in time, or tap Clear day.');return true;}
+      t.textContent='Saving\u2026';
+      try{ allStates[id]=await rpc('admin_att',{p_id:id,p_day:d,p_in:vin,p_out:vout}); delete attDraft[id+'|'+d]; attEdit=''; flash(clear?'Attendance cleared':'Attendance saved'); render(); }
+      catch(err){ flash(errText(err)); render(); }
+      return true; }
+    return false;
+  }
+  document.addEventListener('input',e=>{ if((e.target.id==='ei'||e.target.id==='eo')&&attEdit){ const dr=attDraft[attEdit]=attDraft[attEdit]||{}; dr[e.target.id==='ei'?'in':'out']=e.target.value; } });
+
+  let upDay=1, upArea='All', upStat='all';
+  const who=id=>{const r=roster[id]||{};return `${esc(r.area||'')} · Team ${esc(r.team||'')} · ${esc(r.group||'')}’s group`};
+  const sortIds=ids=>ids.sort((a,b)=>{const A=roster[a],B=roster[b];return (A.area||'~').localeCompare(B.area||'~')||(A.team||'~').localeCompare(B.team||'~')||(A.group||'~').localeCompare(B.group||'~')||(ROLE_ORDER[A.role]??3)-(ROLE_ORDER[B.role]??3)||A.name.localeCompare(B.name)});
+  // attendance status for one agent/day: mc | ok | noout | late | none
+  function attStatus(p,d){ const k=key(d), e=(p.days||{})[k], a=(p.att||{})[k]||{}, c=dayChecks(p,d);
+    if(e&&e.mc) return 'mc'; if(!isWeekday(d)) return 'wknd'; if(c.qr) return 'ok'; if(a.in&&!a.out) return 'noout'; if(a.in) return 'late'; return 'none'; }
+  const bookingsOf=(p,d)=>Object.entries(p.sales||{}).filter(([,x])=>d==null||x.day===d);
+  function renderUploads(){
+    if(!isAdmin) return;
+    const t=Math.min(DAYS,Math.max(1,today())); const sel=$('upDay');
+    if(document.activeElement!==sel) sel.innerHTML=Array.from({length:DAYS},(_,i)=>i+1).map(d=>`<option value="${d}"${d===upDay?' selected':''}>${DOW[dow(d)]} ${d} Oct${d===t?' (today)':''}</option>`).join('');
+    $('upTitle').textContent=`Daily records · ${DOW[dow(upDay)]} ${upDay} Oct`;
+    $('upFilter').innerHTML=['All'].concat(AREAS).map(a=>`<button class="fchip${a===upArea?' on':''}" data-area="${esc(a)}">${esc(a)}</button>`).join('');
+    const k=key(upDay), wd=isWeekday(upDay), wk='w'+weekOf(upDay);
+    const inArea=sortIds(Object.keys(roster).filter(id=>upArea==='All'||roster[id].area===upArea));
+    // summary for the day
+    const st={}; let vid=0,appt=0,reel=0,bk=0;
+    inArea.forEach(id=>{const p=dataOf(id), c=dayChecks(p,upDay), s=attStatus(p,upDay); st[s]=(st[s]||0)+1; if(!c.mc){ if(c.video)vid++; appt+=c.appt; if(c.reel)reel++; } bookingsOf(p,upDay).forEach(([,x])=>{if(!x.cancelled)bk+=cnt(x)*ownShare(x)}); });
+    const n=inArea.length;
+    $('upSum').innerHTML=[wd?chip(true,`Present ${st.ok||0}/${n}`):chip(null,'Weekend \u00b7 no office attendance'),st.noout?chip(false,`No sign-out ${st.noout}`):'',st.late?chip(false,`Late / outside hours ${st.late}`):'',wd?chip(null,`Not signed in ${st.none||0}`):'',st.mc?chip(null,`MC ${st.mc}`):'',chip(null,`Video ${vid}`),chip(null,`Appointments ${appt}`),wd?chip(null,`Reels ${reel}`):'',chip(null,`Booking credits ${nfmt(bk)}`)].join('');
+    const STAT=[['all','Everyone'],['noout','No sign-out'],['none','Not signed in'],['ok','Present']];
+    $('upStatus').innerHTML=STAT.map(([v,l])=>`<button class="fchip${v===upStat?' on':''}" data-stat="${v}">${l}</button>`).join('');
+    const ids=inArea.filter(id=>upStat==='all'||attStatus(dataOf(id),upDay)===upStat||(upStat==='noout'&&attStatus(dataOf(id),upDay)==='late'));
+    $('upBody').innerHTML=ids.map(id=>{const p=dataOf(id), r=roster[id]; const a=(p.att||{})[k]||{}, v=(p.vid||{})[k], e=(p.days||{})[k], y=(p.yt||{})[wk], c=dayChecks(p,upDay), s=attStatus(p,upDay);
+      const bks=bookingsOf(p,upDay).map(([sid,x])=>`<div${x.cancelled?' style="text-decoration:line-through;opacity:.6"':''}><b>${cnt(x)}</b> × ${esc(x.note||'Booking')}${x.at?` <span class="xs">${hhmm(x.at)}</span>`:''}<br><span class="xs">${esc(partTxt(x))} (${nfmt(ownShare(x))})${x.with?', with '+esc(x.with):''}</span></div>`).join('')
+        +taggedFor(id).filter(x=>x.day===upDay).map(x=>`<div${x.cancelled?' style="text-decoration:line-through;opacity:.6"':''}><span class="xs">${[x.caller===id?'Caller':'',x.ads===id?'Ads':''].filter(Boolean).join(' + ')} on ${esc(nameOf(x.from))}\u2019s booking:</span> ${cnt(x)} \u00d7 ${esc(x.note||'Booking')}</div>`).join('')||'<span class="note">none</span>';
+      const head=`<div class="row" style="justify-content:space-between"><b>${esc(r.name)}</b>${s==='mc'?chip(null,'MC'):s==='wknd'?chip(null,'Weekend'):s==='ok'?chip(true,'✓ Present'):s==='noout'?chip(false,'No sign-out'):s==='late'?chip(false,'Not counted'):chip(false,'Not signed in')}</div><div class="note">${who(id)}</div>`;
+      if(s==='mc') return `<div class="upcard">${head}<dl class="rec"><dt>MC reason</dt><dd>${esc(e.reason||'')}</dd><dt>Letter</dt><dd>${e.file?fileBtn(e.file,'View letter'):'<span class="note">sent separately</span>'}</dd><dt>Bookings</dt><dd>${bks}</dd></dl>${recEdit===id+'|'+upDay?recEditor(id,upDay):`<button class="link strong" data-edopen="${upDay}" data-who="${esc(id)}">\u270e Edit day</button>`}</div>`;
+      const attIn=a.admin?'<span class="ok">Marked attended by you</span>':a.in?`${hhmm(a.in)}${a.edited?' <span class="xs">(edited by you)</span>':''} ${fileBtn(a.photo,'Photo')}`:'<span class="note">–</span>';
+      const attOut=a.admin?'':a.out?hhmm(a.out)+(s==='ok'?' <span class="ok">✓ counted</span>':' <span class="bad">not counted</span>'):a.in?'<span class="bad">Not signed out – no marks</span>':'<span class="note">–</span>';
+      const vidTxt=v?`${hhmm(v.at)} ${c.video?'<span class="ok">✓</span>':'<span class="bad">outside 9–10am</span>'} ${fileBtn(v.file,'Watch')}`:'<span class="note">–</span>';
+      const ap=e?(e.appts||[]).filter(x=>x&&String(x.client||'').trim()):[];
+      const apTxt=ap.length?ap.map((x,i)=>`<div>${i+1}. ${x.time?esc(x.time)+' · ':''}<b>${esc(x.client)}</b>${x.note?' · '+esc(x.note):''}</div>`).join('')+(e.at?`<span class="xs">sent ${hhmm(e.at)}</span>`:''):'<span class="note">not submitted</span>';
+      const mark=recEdit===id+'|'+upDay?recEditor(id,upDay):(wd&&attEdit===id+'|'+upDay?attEditor(id,upDay):`<div class="row" style="gap:14px">${wd&&!c.qr?`<button class="link" data-mark="${upDay}" data-who="${esc(id)}">Mark attended</button>`:''}${wd?`<button class="link" data-attedit="${upDay}" data-who="${esc(id)}">Edit times</button>`:''}<button class="link strong" data-edopen="${upDay}" data-who="${esc(id)}">\u270e Edit day</button></div>`);
+      return `<div class="upcard${s==='noout'?' warn':''}">${head}
+        <dl class="rec">
+          ${!wd?'<dt>Office</dt><dd><span class="note">weekend</span></dd>':`<dt>Sign in</dt><dd>${attIn}</dd>
+          ${a.admin?'':`<dt>Sign out</dt><dd>${attOut}</dd>`}`}
+          <dt>Learning video</dt><dd>${vidTxt}</dd>
+          <dt>Appointments</dt><dd>${apTxt}</dd>
+          <dt>Reel</dt><dd>${wd?(e&&e.reel?link(e.reel):'<span class="note">not submitted</span>'):'<span class="note">weekend</span>'}</dd>
+          <dt>YouTube (week)</dt><dd>${y&&y.url?link(y.url):'<span class="note">not yet</span>'}</dd>
+          <dt>Bookings</dt><dd>${bks}</dd>
+        </dl>${mark}
+      </div>`}).join('')||'<p class="note">No agents match.</p>';
+    // all bookings
+    const all=[]; inArea.forEach(id=>bookingsOf(dataOf(id)).forEach(([sid,x])=>all.push({id,sid,x})));
+    all.sort((A,B)=>(B.x.day||0)-(A.x.day||0)||(B.x.at||0)-(A.x.at||0));
+    const valid=all.filter(o=>!o.x.cancelled).reduce((s,o)=>s+cnt(o.x)*ownShare(o.x),0);
+    $('bkTotal').textContent=cr(Math.round(valid*100)/100);
+    $('bkAll').innerHTML=all.length?`<table><thead><tr><th>Date</th><th>Agent</th><th>Part</th><th>With</th><th>Project / unit</th><th class="n">How many</th><th class="n">Credit</th><th></th></tr></thead><tbody>${all.map(({id,sid,x})=>`<tr${x.cancelled?' style="opacity:.55;text-decoration:line-through"':''}><td>${x.day} Oct${x.at?` <span class="xs">${hhmm(x.at)}</span>`:''}</td><td><b>${esc(roster[id].name)}</b><br><span class="xs">${esc(roster[id].area)} · ${esc(roster[id].team)} · ${esc(roster[id].group)}</span></td><td>${esc(partTxt(x))}</td><td style="white-space:normal">${esc(x.with||'')}</td><td style="white-space:normal">${esc(x.note||'Booking')}</td><td class="n">${cnt(x)}</td><td class="n">${nfmt(cnt(x)*ownShare(x))}</td><td><button class="link" style="text-decoration:underline" data-cancel="${esc(sid)}" data-who="${esc(id)}" data-val="${x.cancelled?'0':'1'}">${x.cancelled?'Restore':'Mark cancelled'}</button></td></tr>`).join('')}</tbody></table>`:'<p class="note" style="margin:0">No bookings yet.</p>';
+  }
+
+  // one Excel-friendly CSV with every record in the system
+  function downloadAll(){
+    const q=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+    const line=a=>a.map(q).join(',');
+    const t=Math.min(DAYS,Math.max(1,today())), last=clock.test?DAYS:t;
+    const ids=sortIds(Object.keys(roster)); const out=[];
+    const base=id=>{const r=roster[id];return [r.name,r.area,r.team,r.group,r.role]};
+    out.push('SCORES'); out.push(line(['Agent','Area','Team','Group','Role','KPI 1 (/50)','KPI 2 (/50)','Total (/100)','Attendance days','Appointments','Reels','Learning video days','YouTube weeks','Booking credits','MC days']));
+    ids.forEach(id=>{const s=score(dataOf(id),id); out.push(line([...base(id),f1(s.kpi1),f1(s.kpi2),f1(s.kpi1+s.kpi2),s.done.qr,s.done.appt,s.done.reel,s.done.video,s.done.yt,s.sales,s.mc]));});
+    out.push(''); out.push('DAILY RECORDS');
+    out.push(line(['Date','Day','Agent','Area','Team','Group','Status','Sign in','Sign out','Attendance counted','Learning video','Video counted','Appointments counted','Appointments logged','Appt 1 time','Appt 1 client','Appt 1 details','Appt 2 time','Appt 2 client','Appt 2 details','More appointments','Report sent','Reel link','MC reason']));
+    const ST={ok:'Present',noout:'Signed in, no sign-out',late:'Outside hours',none:'Not signed in',mc:'MC'};
+    for(let d=1;d<=last;d++) ids.forEach(id=>{const p=dataOf(id), k=key(d), a=(p.att||{})[k]||{}, v=(p.vid||{})[k], e=(p.days||{})[k]||{}, c=dayChecks(p,d), s=attStatus(p,d);
+      const ap=(e.appts||[]).filter(x=>x&&String(x.client||'').trim()); const A=i=>ap[i]?[ap[i].time||'',ap[i].client,ap[i].note||'']:['','',''];
+      const MORE=ap.slice(2).map(x=>[x.time,x.client,x.note].filter(Boolean).join(' / ')).join(' | ');
+      out.push(line([d+' Oct',DOW[dow(d)],...base(id).slice(0,4),ST[s],a.admin?'marked by admin':a.in?hhmm(a.in):'',a.out?hhmm(a.out):'',c.mc?'':c.qr?'Yes':'No',v?hhmm(v.at):'',c.mc?'':c.video?'Yes':'No',c.mc?'':nfmt(c.appt),ap.length,...A(0),...A(1),MORE,e.at&&!e.mc?hhmm(e.at):'',e.reel||'',e.mc?e.reason||'':'']));});
+    out.push(''); out.push('BOOKINGS'); out.push(line(['Date','Time added','Agent','Area','Team','Group','Project / unit','How many','Part','With','Credit','Status']));
+    ids.forEach(id=>bookingsOf(dataOf(id)).sort((A,B)=>(A[1].day||0)-(B[1].day||0)).forEach(([,x])=>out.push(line([x.day+' Oct',x.at?hhmm(x.at):'',...base(id).slice(0,4),x.note||'',cnt(x),partTxt(x),x.with||'',nfmt(cnt(x)*ownShare(x)),x.cancelled?'Cancelled':'Valid']))));
+    out.push(''); out.push('YOUTUBE'); out.push(line(['Agent','Area','Team','Group',...WEEKS.map((w,i)=>`Week ${i+1} (${w[0]}-${w[1]} Oct)`)]));
+    ids.forEach(id=>{const yt=dataOf(id).yt||{}; out.push(line([...base(id).slice(0,4),...WEEKS.map((w,i)=>(yt['w'+(i+1)]||{}).url||'')]));});
+    const blob=new Blob(['﻿'+out.join('\r\n')],{type:'text/csv;charset=utf-8'});
+    const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=`MADROX-records-${t}Oct.csv`; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
+  }
+
+  // ---------- results update (back office only) ----------
+  let rsDay=0;
+  function rsModel(){
+    const t=Math.min(DAYS,Math.max(1,today())); if(!rsDay||rsDay>t) rsDay=t;
+    const d=rsDay, k=key(d), wd=isWeekday(d), ids=Object.keys(roster), N=ids.length;
+    const sc={}; ids.forEach(id=>{ const x=score(dataOf(id),id); sc[id]={k1:x.kpi1,k2:x.kpi2,tot:x.kpi1+x.kpi2}; });
+    const groups=groupsOf();
+    const areas=AREAS.map(area=>{ const teams=areaBoard(area,groups).map(tm=>({team:tm.team,k1:tm.kpi1,k2:tm.kpi2,tot:tm.total,n:tm.n}));
+      const a=teams[0], b=teams[1], lead=Math.abs(a.tot-b.tot)<0.05?null:(a.tot>b.tot?'A':'B'); return {area,teams,lead,gap:Math.abs(a.tot-b.tot)}; });
+    const gr=groups.map(g=>({name:g.group+'\u2019s group',tag:`${g.area==='KL'?'KL':'M&JB'} \u00b7 ${g.team}`,k1:g.kpi1,k2:g.kpi2,tot:g.kpi1+g.kpi2,n:g.ids.length})).sort((x,y)=>y.tot-x.tot||y.k1-x.k1||x.name.localeCompare(y.name));
+    const ind=ids.map(id=>({name:roster[id].name,tag:`${roster[id].area==='KL'?'KL':'M&JB'} \u00b7 ${roster[id].team}`,...sc[id]})).sort((x,y)=>y.tot-x.tot||y.k1-x.k1||x.name.localeCompare(y.name));
+    let inOn=0,vid=0,ap2=0,apN=0,reel=0,bk=0;
+    ids.forEach(id=>{ const p=dataOf(id), c=dayChecks(p,d), st=attStatus(p,d), e=(p.days||{})[k]||{};
+      if(st==='ok'||st==='noout') inOn++; if(c.video) vid++; if(c.appt>=2) ap2++; apN+=(e.appts||[]).filter(r=>r&&r.client).length; if(c.reel) reel++;
+      Object.values(p.sales||{}).forEach(x=>{ if(x.day===d&&!x.cancelled) bk+=cnt(x)*ownShare(x); }); });
+    const act=[[wd?`${inOn}/${N}`:'\u2013','Signed in on time'],[`${vid}/${N}`,'Learning video'],[`${ap2}/${N}`,'Did 2 appointments'],[String(apN),'Appointments logged'],[wd?`${reel}/${N}`:'\u2013','Reels'],[nfmt(Math.round(bk*100)/100),'Booking marks']];
+    return {d,N,areas,gr,ind,act,title:`${DOW[dow(d)]} ${d} Oct 2026 \u00b7 Day ${d} of ${DAYS} \u00b7 ${N} agents`};
+  }
+  function drawResults(){
+    const M=rsModel(), W=1080, P=56, S=2, F='Arial, Helvetica, sans-serif', BLUE='#1f5f8b', INK='#15181d', MUTE='#5b6470';
+    const cv=document.createElement('canvas'), x=cv.getContext('2d');
+    const font=(w,px)=>{x.font=`${w} ${px}px ${F}`};
+    const rr=(X,Y,w,h,r)=>{ x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+w,Y,X+w,Y+h,r); x.arcTo(X+w,Y+h,X,Y+h,r); x.arcTo(X,Y+h,X,Y,r); x.arcTo(X,Y,X+w,Y,r); x.closePath(); };
+    const ROW=38, gap=28, colW=(W-2*P-gap)/2;
+    const gRows=Math.ceil(M.gr.length/2), iRows=Math.ceil(M.ind.length/2);
+    const yTeams=232, teamH=206, yAct=yTeams+teamH+56, actH=104, yG=yAct+actH+62, yI=yG+34+gRows*ROW+52, H=yI+34+iRows*ROW+86;
+    cv.width=W*S; cv.height=H*S; x.scale(S,S); x.fillStyle='#fff'; x.fillRect(0,0,W,H); x.textBaseline='alphabetic';
+    const label=(txt,X,Y)=>{ font(700,13); x.fillStyle='#4b5563'; let ex=X; txt.split('').forEach(ch=>{x.fillText(ch,ex,Y); ex+=x.measureText(ch).width+1.4;}); };
+    // header
+    font(700,14); x.fillStyle=BLUE; let ex=P; 'MADROX CHALLENGE'.split('').forEach(ch=>{ x.fillText(ch,ex,74); ex+=x.measureText(ch).width+2.2; });
+    font(800,56); x.fillStyle=INK; x.fillText('Results Update',P,132);
+    font(400,19); x.fillStyle=MUTE; x.fillText(M.title,P,170);
+    // team standings
+    label('TEAM STANDINGS \u00b7 KPI 1 + KPI 2 (OUT OF 100)',P,yTeams-12);
+    M.areas.forEach((A,i)=>{ const X=P+i*(colW+gap), Y=yTeams; x.fillStyle='#f1f3f7'; rr(X,Y,colW,teamH,8); x.fill();
+      font(700,19); x.fillStyle=INK; x.fillText(A.area,X+22,Y+36);
+      font(400,14); x.fillStyle=MUTE; x.textAlign='right'; x.fillText(A.lead?`Team ${A.lead} leads by ${f1(A.gap)}`:'Level',X+colW-22,Y+36); x.textAlign='left';
+      A.teams.forEach((tm,j)=>{ const ty=Y+56+j*70, win=A.lead===tm.team; x.fillStyle=win?BLUE:'#fff'; rr(X+16,ty,colW-32,60,6); x.fill(); if(!win){x.strokeStyle='#d5d9e0';x.lineWidth=1.5;x.stroke();}
+        font(700,20); x.fillStyle=win?'#fff':INK; x.fillText('Team '+tm.team,X+34,ty+28);
+        font(400,13); x.fillStyle=win?'#dbe8f2':MUTE; x.fillText(`KPI 1 ${f1(tm.k1)} \u00b7 KPI 2 ${f1(tm.k2)} \u00b7 ${tm.n} agents`,X+34,ty+48);
+        font(800,34); x.fillStyle=win?'#fff':INK; x.textAlign='right'; x.fillText(f1(tm.tot),X+colW-34,ty+41); x.textAlign='left'; }); });
+    // day activity
+    label(`DAY ACTIVITY \u00b7 ${DOW[dow(M.d)].toUpperCase()} ${M.d} OCT`,P,yAct-12);
+    const aw=(W-2*P-14*(M.act.length-1))/M.act.length;
+    M.act.forEach((a,i)=>{ const X=P+i*(aw+14); x.fillStyle='#f1f3f7'; rr(X,yAct,aw,actH,8); x.fill();
+      font(800,30); x.fillStyle=BLUE; x.fillText(a[0],X+14,yAct+46); font(400,13); x.fillStyle='#374151'; x.fillText(a[1],X+14,yAct+76,aw-22); });
+    // ranking tables
+    const table=(title,rows,Y,per)=>{ label(title,P,Y-12);
+      [0,1].forEach(ci=>{ const X=P+ci*(colW+gap); x.fillStyle=INK; x.fillRect(X,Y,colW,2);
+        font(700,11); x.fillStyle='#4b5563'; x.textAlign='right'; x.fillText('KPI 1',X+colW-150,Y+20); x.fillText('KPI 2',X+colW-84,Y+20); x.fillText('TOTAL',X+colW,Y+20); x.textAlign='left';
+        rows.slice(ci*per,(ci+1)*per).forEach((r,ri)=>{ const rank=ci*per+ri+1, ry=Y+30+ri*ROW;
+          if(rank<=3){ x.fillStyle=BLUE; rr(X,ry+4,28,26,5); x.fill(); font(700,14); x.fillStyle='#fff'; x.textAlign='center'; x.fillText(String(rank),X+14,ry+22); x.textAlign='left'; }
+          else { font(700,14); x.fillStyle='#6b7280'; x.textAlign='center'; x.fillText(String(rank),X+14,ry+22); x.textAlign='left'; }
+          font(rank<=3?700:400,16); x.fillStyle=INK; x.fillText(r.name,X+40,ry+23,colW-290); const nw=Math.min(x.measureText(r.name).width,colW-290);
+          font(400,12); x.fillStyle='#6b7280'; x.fillText(r.tag,X+40+nw+10,ry+23);
+          font(400,14); x.fillStyle='#374151'; x.textAlign='right'; x.fillText(f1(r.k1),X+colW-150,ry+23); x.fillText(f1(r.k2),X+colW-84,ry+23);
+          font(800,17); x.fillStyle=INK; x.fillText(f1(r.tot),X+colW,ry+23); x.textAlign='left';
+          x.fillStyle='#e3e6eb'; x.fillRect(X,ry+ROW-1,colW,1); }); }); };
+    table('GROUP RANKING \u00b7 AVERAGE OF THE GROUP',M.gr,yG,gRows);
+    table('INDIVIDUAL RANKING',M.ind,yI,iRows);
+    // footer
+    x.fillStyle='#e3e6eb'; x.fillRect(P,H-58,W-2*P,1); font(400,13); x.fillStyle=MUTE;
+    x.fillText('Marks so far. KPI 1 = daily habits (max 50). KPI 2 = bookings, 1 full deal = 1 mark (max 50). Team and group = average of members.',P,H-34,W-2*P);
+    return cv;
+  }
+  function rsSummary(){
+    const M=rsModel(), L=[`MADROX results \u00b7 ${M.title}`,''];
+    M.areas.forEach(A=>L.push(`${A.area}: Team A ${f1(A.teams[0].tot)} vs Team B ${f1(A.teams[1].tot)}`+(A.lead?` \u2013 Team ${A.lead} leads by ${f1(A.gap)}`:' \u2013 level')));
+    L.push(''); L.push('Top 5 agents: '+M.ind.slice(0,5).map((r,i)=>`${i+1}. ${r.name} ${f1(r.tot)}`).join(', '));
+    L.push('Top 3 groups: '+M.gr.slice(0,3).map((r,i)=>`${i+1}. ${r.name} ${f1(r.tot)}`).join(', '));
+    L.push(''); L.push(`Day activity (${DOW[dow(M.d)]} ${M.d} Oct): `+M.act.map(a=>`${a[1]} ${a[0]}`).join(' \u00b7 '));
+    return L.join('\n');
+  }
+  function renderResults(){
+    if(!isAdmin||$('results').hidden) return;
+    const t=Math.min(DAYS,Math.max(1,today())), sel=$('rsDay'); if(!rsDay||rsDay>t) rsDay=t;
+    if(document.activeElement!==sel) sel.innerHTML=Array.from({length:t},(_,i)=>i+1).map(d=>`<option value="${d}"${d===rsDay?' selected':''}>${DOW[dow(d)]} ${d} Oct</option>`).join('');
+    try{ $('rsPrev').src=drawResults().toDataURL('image/png'); }catch(_){ }
+    if(document.activeElement!==$('rsText')) $('rsText').value=rsSummary();
+  }
+  async function saveResultsImage(){
+    const b=$('rsImg'), note=$('rsNote'); b.disabled=true; b.textContent='Making image\u2026';
+    try{ const cv=drawResults(), blob=await new Promise(r=>cv.toBlob(r,'image/png')), name=`MADROX-results-${rsDay}Oct.png`; let shared=false;
+      if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)&&navigator.canShare){ const file=new File([blob],name,{type:'image/png'}); if(navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:'MADROX results'}); shared=true; note.textContent='Shared.'; }catch(_){ shared=true; note.textContent='Share cancelled. Tap Save as image to try again.'; } } }
+      if(!shared){ const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),3000); note.textContent='Image saved: '+name; }
+    }catch(err){ note.textContent='Couldn\u2019t make the image. You can screenshot the preview below instead.'; }
+    b.disabled=false; b.textContent='Save as image';
+  }
+
+  // ---------- attendance record (back office) ----------
+  let arArea='All', arDay=0;
+  const arDays=()=>{ const t=Math.min(DAYS,Math.max(1,today())), last=clock.test?DAYS:t, out=[]; for(let d=1;d<=last;d++) if(isWeekday(d)) out.push(d); return out; };
+  // per agent/day: status + times
+  function arCell(id,d){ const p=dataOf(id), a=(p.att||{})[key(d)]||{}, st=attStatus(p,d);
+    return {st, in:a.in?hhmm(a.in):'', out:a.out?hhmm(a.out):'', admin:!!a.admin}; }
+  const AR_TXT={ok:'Present',noout:'Signed in, no sign-out',late:'Late / outside hours',none:'Absent',mc:'MC'};
+  function arSummary(d){
+    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea)), g={ok:[],noout:[],late:[],none:[],mc:[]};
+    ids.forEach(id=>{ const c=arCell(id,d); (g[c.st]||g.none).push(roster[id].name+(c.st==='late'&&c.in?' ('+c.in+')':'')); });
+    const on=g.ok.length+g.noout.length, L=[];
+    L.push(`MADROX attendance \u00b7 ${DOW[dow(d)]} ${d} Oct 2026`+(arArea==='All'?'':' \u00b7 '+arArea));
+    L.push(`Signed in on time (9:45\u201310:00am): ${on} of ${ids.length}`);
+    L.push(`Signed out as well: ${g.ok.length}`+(g.noout.length?` \u00b7 No sign-out yet: ${g.noout.length} (${g.noout.join(', ')})`:''));
+    L.push(`Late: ${g.late.length}`+(g.late.length?' \u2013 '+g.late.join(', '):''));
+    L.push(`Absent: ${g.none.length}`+(g.none.length?' \u2013 '+g.none.join(', '):''));
+    L.push(`MC: ${g.mc.length}`+(g.mc.length?' \u2013 '+g.mc.join(', '):''));
+    return L.join('\n');
+  }
+  let arFrom=0, arTo=0;
+  const AR_PILL={ok:'Present',noout:'No sign-out',late:'Late',none:'Absent',mc:'MC'}, AR_SHORT={ok:'\u2713',noout:'No out',late:'Late',none:'\u2717',mc:'MC'};
+  function renderAttReport(days){
+    if(!days.includes(arTo)) arTo=days[days.length-1];
+    if(!days.includes(arFrom)||arFrom>arTo) arFrom=days[Math.max(0,days.indexOf(arTo)-1)];
+    const opt=(v)=>days.map(d=>`<option value="${d}"${d===v?' selected':''}>${DOW[dow(d)]} ${d} Oct</option>`).join('');
+    if(document.activeElement!==$('arFrom')) $('arFrom').innerHTML=opt(arFrom);
+    if(document.activeElement!==$('arTo')) $('arTo').innerHTML=opt(arTo);
+    const R=days.filter(d=>d>=arFrom&&d<=arTo), many=R.length>3, lab=many?AR_SHORT:AR_PILL;
+    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea)), N=ids.length;
+    const cards=R.map(d=>{ const c={ok:0,noout:0,late:0,none:0,mc:0}; ids.forEach(id=>c[arCell(id,d).st]++);
+      const sub=[[c.none,'absent'],[c.noout,'no sign-out'],[c.late,'late'],[c.mc,'MC']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' \u00b7 ')||'Everyone present';
+      return `<div class="card"><div class="d">${DOW[dow(d)]} ${d} Oct</div><div class="n">${c.ok}<small>of ${N} present</small></div><div class="s">${sub}</div></div>`; }).join('');
+    const teams={}; ids.forEach(id=>{ const r=roster[id], k=`${r.area} \u00b7 Team ${r.team}`; (teams[k]=teams[k]||[]).push(id); });
+    const blocks=Object.entries(teams).map(([k,list])=>`<div class="blk"><table><thead><tr><th class="g">${esc(k)}</th>${R.map(d=>`<th>${DOW[dow(d)]} ${d}</th>`).join('')}</tr></thead><tbody>${
+      list.map(id=>`<tr><td class="nm">${esc(roster[id].name)}</td>${R.map(d=>{const st=arCell(id,d).st;return `<td><span class="pl p-${st}">${lab[st]}</span></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`).join('');
+    const all=[],some=[],zero=[]; ids.forEach(id=>{ let ok=0,work=0; R.forEach(d=>{const st=arCell(id,d).st; if(st!=='mc')work++; if(st==='ok')ok++;}); (ok&&ok===work?all:ok?some:zero).push(roster[id].name); });
+    const allLab=R.length===1?'Present':R.length===2?'Present both days':`Present all ${R.length} days`, someLab=R.length===2?'Present one day':'Present some days';
+    const box=`<div class="box"><b>${allLab}: ${all.length}</b><p>${esc(all.join(', '))||'\u2013'}</p>${R.length>1?`<b>${someLab}: ${some.length}</b><p>${esc(some.join(', '))||'\u2013'}</p>`:''}<b class="red">No day counted yet: ${zero.length}</b><p>${esc(zero.join(', '))||'\u2013'}</p></div>`;
+    const range=R.length===1?`${DOW[dow(R[0])]} ${R[0]} Oct 2026`:`${DOW[dow(R[0])]} ${R[0]} Oct \u2013 ${DOW[dow(R[R.length-1])]} ${R[R.length-1]} Oct 2026`;
+    $('arReport').className='arr'+(R.length>4?' wide':'');
+    $('arReport').innerHTML=`<div class="eb">MADROX Challenge</div><h3>Attendance Update</h3><div class="sub">${range} \u00b7 ${N} agents${arArea==='All'?'':' \u00b7 '+esc(arArea)}</div>
+      <div class="cards">${cards}</div><div class="cols">${blocks}${box}</div>
+      <div class="ft">Present = signed in 9:45\u201310:00am and signed out. No sign-out = signed in but did not sign out, so the day is not counted. Late = signed in after 10:00am.${many?' \u2713 Present \u00b7 \u2717 Absent.':''}</div>`;
+  }
+  // the same report as data, used to draw the image
+  function arModel(){
+    const days=arDays(), R=days.filter(d=>d>=arFrom&&d<=arTo), many=R.length>3, lab=many?AR_SHORT:AR_PILL;
+    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea)), N=ids.length;
+    const cards=R.map(d=>{ const c={ok:0,noout:0,late:0,none:0,mc:0}; ids.forEach(id=>c[arCell(id,d).st]++);
+      return {label:`${DOW[dow(d)]} ${d} Oct`.toUpperCase(), ok:c.ok, sub:[[c.none,'absent'],[c.noout,'no sign-out'],[c.late,'late'],[c.mc,'MC']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' · ')||'Everyone present'}; });
+    const tm={}; ids.forEach(id=>{ const r=roster[id], k=`${r.area} · Team ${r.team}`; (tm[k]=tm[k]||[]).push({name:r.name,sts:R.map(d=>arCell(id,d).st)}); });
+    const all=[],some=[],zero=[]; ids.forEach(id=>{ let ok=0,work=0; R.forEach(d=>{const st=arCell(id,d).st; if(st!=='mc')work++; if(st==='ok')ok++;}); (ok&&ok===work?all:ok?some:zero).push(roster[id].name); });
+    const range=R.length===1?`${DOW[dow(R[0])]} ${R[0]} Oct 2026`:`${DOW[dow(R[0])]} ${R[0]} Oct – ${DOW[dow(R[R.length-1])]} ${R[R.length-1]} Oct 2026`;
+    return {R,many,lab,N,cards,teams:Object.entries(tm).map(([name,rows])=>({name,rows})),all,some,zero,
+      sub:`${range} · ${N} agents${arArea==='All'?'':' · '+arArea}`, heads:R.map(d=>`${DOW[dow(d)]} ${d}`.toUpperCase()),
+      allLab:R.length===1?'Present':R.length===2?'Present both days':`Present all ${R.length} days`, someLab:R.length===2?'Present one day':'Present some days'};
+  }
+  function drawAttCanvas(){
+    const M=arModel(), W=1080, P=56, S=2, F='Arial, Helvetica, sans-serif';
+    const cv=document.createElement('canvas'), x=cv.getContext('2d');
+    const font=(w,px)=>{x.font=`${w} ${px}px ${F}`};
+    const wrap=(txt,maxW)=>{ const words=String(txt).split(' '), out=[]; let cur=''; words.forEach(w=>{ const t=cur?cur+' '+w:w; if(x.measureText(t).width>maxW&&cur){out.push(cur);cur=w;} else cur=t; }); if(cur) out.push(cur); return out.length?out:['–']; };
+    const rr=(X,Y,w,h,r)=>{ x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+w,Y,X+w,Y+h,r); x.arcTo(X+w,Y+h,X,Y+h,r); x.arcTo(X,Y+h,X,Y,r); x.arcTo(X,Y,X+w,Y,r); x.closePath(); };
+    // ---- layout ----
+    const two=M.R.length<=4, gap=28, colW=two?(W-2*P-gap)/2:W-2*P, nameW=two?(M.R.length<=2?230:150):260;
+    const pillW=Math.min(112,(colW-nameW-6*(M.R.length-1))/M.R.length), ROW=38, HEAD=40;
+    const per=M.R.length<=2?2:Math.min(4,M.R.length), cardRows=Math.ceil(M.cards.length/per), cardH=M.R.length<=2?180:128, cardW=(W-2*P-24*(per-1))/per;
+    const blkH=t=>HEAD+t.rows.length*ROW+22;
+    font(400,15); const boxW=colW-48; const bx=[[M.allLab+': '+M.all.length,M.all,'#15181d']].concat(M.R.length>1?[[M.someLab+': '+M.some.length,M.some,'#15181d']]:[]).concat([['No day counted yet: '+M.zero.length,M.zero,'#b3261e']]).map(([h,names,col])=>({h,col,lines:wrap(names.join(', ')||'–',boxW)}));
+    const boxH=bx.reduce((a,g)=>a+26+g.lines.length*21+14,0)+30;
+    const items=M.teams.map(t=>({t,h:blkH(t)})).concat([{box:true,h:boxH+18}]);
+    const cols=[[],[]]; if(two){ const first=M.teams.length?M.teams[0].name.split(' \u00b7 ')[0]:'', multi=M.teams.some(t=>t.name.split(' \u00b7 ')[0]!==first); let n=0; items.forEach(i=>{ if(i.box) cols[1].push(i); else if(multi) (i.t.name.split(' \u00b7 ')[0]===first?cols[0]:cols[1]).push(i); else (n++<Math.ceil(M.teams.length/2)?cols[0]:cols[1]).push(i); }); } else cols[0]=items;
+    const colH=c=>c.reduce((a,i)=>a+i.h,0), top=200+cardRows*(cardH+18)+16, H=top+Math.max(colH(cols[0]),colH(cols[1]))+90;
+    cv.width=W*S; cv.height=H*S; x.scale(S,S); x.fillStyle='#fff'; x.fillRect(0,0,W,H); x.textBaseline='alphabetic';
+    // ---- header ----
+    font(700,14); x.fillStyle='#1f5f8b'; let ex=P; 'MADROX CHALLENGE'.split('').forEach(ch=>{ x.fillText(ch,ex,74); ex+=x.measureText(ch).width+2.2; });
+    font(800,56); x.fillStyle='#15181d'; x.fillText('Attendance Update',P,132);
+    font(400,19); x.fillStyle='#5b6470'; x.fillText(M.sub,P,170);
+    // ---- day cards ----
+    M.cards.forEach((c,i)=>{ const X=P+(i%per)*(cardW+24), Y=200+Math.floor(i/per)*(cardH+18); x.fillStyle='#f1f3f7'; rr(X,Y,cardW,cardH,8); x.fill();
+      const big=M.R.length<=2?72:48; font(700,M.R.length<=2?15:12); x.fillStyle='#4b5563'; x.fillText(c.label,X+24,Y+(M.R.length<=2?38:28));
+      font(800,big); x.fillStyle='#1f5f8b'; x.fillText(String(c.ok),X+24,Y+(M.R.length<=2?112:80)); const nw=x.measureText(String(c.ok)).width;
+      font(700,M.R.length<=2?21:14); x.fillStyle='#15181d'; x.fillText(`of ${M.N} present`,X+24+nw+12,Y+(M.R.length<=2?112:80));
+      font(400,M.R.length<=2?17:12); x.fillStyle='#374151'; wrap(c.sub,cardW-40).slice(0,2).forEach((ln,j)=>x.fillText(ln,X+24,Y+(M.R.length<=2?152:104)+j*16)); });
+    // ---- columns ----
+    const PILL={ok:['#1f5f8b','#fff',0],noout:['#fbe6ad','#3b2f06',0],late:['#e3e5ea','#2d3340',0],none:['#fff','#b3261e','#d9534f'],mc:['#fff','#4b5563','#9aa3af']};
+    cols.forEach((col,ci)=>{ let Y=top; const X0=P+ci*(colW+gap);
+      col.forEach(it=>{ if(it.box){ x.strokeStyle='#15181d'; x.lineWidth=2; rr(X0,Y,colW,boxH,8); x.stroke(); let yy=Y+34;
+          bx.forEach(g=>{ font(700,17); x.fillStyle=g.col; x.fillText(g.h,X0+24,yy); yy+=24; font(400,15); x.fillStyle='#374151'; g.lines.forEach(ln=>{x.fillText(ln,X0+24,yy); yy+=21;}); yy+=16; }); }
+        else { const t=it.t, px0=X0+colW-(pillW*M.R.length+6*(M.R.length-1));
+          font(700,18); x.fillStyle='#15181d'; x.fillText(t.name,X0,Y+24);
+          font(700,12); x.fillStyle='#4b5563'; x.textAlign='center'; M.heads.forEach((h,i)=>x.fillText(h,px0+i*(pillW+6)+pillW/2,Y+26)); x.textAlign='left';
+          x.fillStyle='#15181d'; x.fillRect(X0,Y+HEAD-4,colW,2);
+          t.rows.forEach((r,ri)=>{ const ry=Y+HEAD+ri*ROW; font(400,17); x.fillStyle='#15181d'; x.fillText(r.name,X0,ry+24);
+            r.sts.forEach((st,i)=>{ const p=PILL[st]||PILL.none, px=px0+i*(pillW+6); rr(px,ry+6,pillW,25,4); x.fillStyle=p[0]; x.fill(); if(p[2]){x.strokeStyle=p[2];x.lineWidth=1.5;x.stroke();}
+              font(700,12.5); x.fillStyle=p[1]; x.textAlign='center'; x.fillText(M.lab[st],px+pillW/2,ry+23); x.textAlign='left'; });
+            x.fillStyle='#e3e6eb'; x.fillRect(X0,ry+ROW-1,colW,1); }); }
+        Y+=it.h; }); });
+    // ---- footer ----
+    x.fillStyle='#e3e6eb'; x.fillRect(P,H-58,W-2*P,1); font(400,13); x.fillStyle='#5b6470';
+    x.fillText('Present = signed in 9:45–10:00am and signed out. No sign-out = signed in but did not sign out, so the day is not counted. Late = signed in after 10:00am.'+(M.many?'  \u2713 Present \u00b7 \u2717 Absent.':''),P,H-34,W-2*P);
+    return cv;
+  }
+  async function saveAttImage(){
+    const b=$('arImg'), note=$('arImgNote'); b.disabled=true; b.textContent='Making image…';
+    try{
+      const cv=drawAttCanvas(), blob=await new Promise(r=>cv.toBlob(r,'image/png')), name=`MADROX-attendance-${arFrom===arTo?arFrom:arFrom+'-'+arTo}Oct.png`;
+      let shared=false;
+      if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)&&navigator.canShare){ const file=new File([blob],name,{type:'image/png'}); if(navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:'MADROX attendance'}); shared=true; note.textContent='Shared.'; }catch(_){ shared=true; note.textContent='Share cancelled. Tap Save as image to try again.'; } } }
+      if(!shared){ const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),3000); note.textContent='Image saved: '+name; }
+    }catch(err){ note.textContent='Couldn’t make the image. You can screenshot the report below instead.'; }
+    b.disabled=false; b.textContent='Save as image';
+  }
+  async function loadTeamAtt(force){
+    if(isAdmin||practice||!me||!sb) return;
+    if(!force&&Date.now()-teamAttAt<60000) return;
+    teamAttAt=Date.now();
+    try{ const r=await rpc('team_attendance',{p_id:me.id,p_pin:me.pin,p_device:DEVICE}); teamAtt=r.states||{}; setClock(r.clock); arErr=''; }
+    catch(e){ arErr=errText(e); }
+    renderAttRec();
+  }
+  let arErr='';
+  function renderAttRec(){
+    $('arEyebrow').textContent=isAdmin?'Back office':'Team';
+    $('arCsv').hidden=!isAdmin; $('arSumPanel').hidden=!isAdmin; $('arTblPanel').hidden=!isAdmin;
+    if(!isAdmin&&!me){ $('arFilter').innerHTML=''; $('arReport').className='arr'; $('arReport').innerHTML='<p style="margin:0;color:#5b6470">Log in on the Check in tab to see the team attendance.</p>'; return; }
+    if(!isAdmin&&arErr){ $('arReport').className='arr'; $('arReport').innerHTML=`<p style="margin:0;color:#b3261e">Couldn\u2019t load attendance: ${esc(arErr)} Tap Refresh to try again.</p>`; return; }
+    const days=arDays(); if(!days.length){ $('arReport').className='arr'; $('arReport').innerHTML='<p style="margin:0;color:#5b6470">Attendance starts on Thursday 1 October.</p>'; $('arTable').innerHTML=''; $('arText').value=''; return; }
+    if(!days.includes(arDay)) arDay=days[days.length-1];
+    renderAttReport(days);
+    $('arFilter').innerHTML=['All'].concat(AREAS).map(a=>`<button class="fchip${a===arArea?' on':''}" data-area="${esc(a)}">${esc(a)}</button>`).join('');
+    const sel=$('arDay'); if(document.activeElement!==sel) sel.innerHTML=days.map(d=>`<option value="${d}"${d===arDay?' selected':''}>${DOW[dow(d)]} ${d} Oct</option>`).join('');
+    if(document.activeElement!==$('arText')) $('arText').value=arSummary(arDay);
+    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea));
+    const tot=days.map(()=>0); let rows='', lastG='';
+    ids.forEach(id=>{ const r=roster[id], gk=`${r.area} \u00b7 Team ${r.team} \u00b7 ${r.group}\u2019s group`;
+      if(gk!==lastG){ rows+=`<tr class="grp"><td colspan="${days.length+2}">${esc(gk)}</td></tr>`; lastG=gk; }
+      let ok=0, work=0;
+      const tds=days.map((d,i)=>{ const c=arCell(id,d); if(c.st!=='mc') work++; if(c.st==='ok'){ok++;tot[i]++;}
+        if(c.st==='mc') return '<td class="a-mid">MC</td>';
+        if(c.st==='ok') return `<td class="a-ok">\u2713<small>${c.admin?'marked':c.in+'\u2013'+c.out}</small></td>`;
+        if(c.st==='noout') return `<td class="a-mid">No out<small>in ${c.in}</small></td>`;
+        if(c.st==='late') return `<td class="a-bad">Late<small>${c.in}${c.out?'\u2013'+c.out:''}</small></td>`;
+        return '<td class="a-bad">\u2717</td>'; }).join('');
+      rows+=`<tr><td><b>${esc(r.name)}</b></td>${tds}<td class="n"><b>${ok}/${work}</b></td></tr>`; });
+    $('arTable').innerHTML=`<table class="artbl"><thead><tr><th>Agent</th>${days.map(d=>`<th>${DOW[dow(d)]}<br>${d} Oct</th>`).join('')}<th>Counted</th></tr></thead><tbody>${rows}</tbody>
+      <tfoot><tr><td><b>Counted (\u2713) per day</b></td>${tot.map(n=>`<td><b>${n}/${ids.length}</b></td>`).join('')}<td></td></tr></tfoot></table>`;
+  }
+  function downloadAttendance(){
+    const q=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}, line=a=>a.map(q).join(',');
+    const days=arDays(), ids=sortIds(Object.keys(roster)), out=[];
+    out.push('ATTENDANCE SUMMARY'); out.push(line(['Agent','Area','Team','Group','Role',...days.map(d=>DOW[dow(d)]+' '+d+' Oct'),'Days counted','Working days']));
+    ids.forEach(id=>{ const r=roster[id]; let ok=0, work=0; const cells=days.map(d=>{ const c=arCell(id,d); if(c.st!=='mc') work++; if(c.st==='ok') ok++; return AR_TXT[c.st]||''; });
+      out.push(line([r.name,r.area,r.team,r.group,r.role,...cells,ok,work])); });
+    out.push(''); out.push('ATTENDANCE DETAIL'); out.push(line(['Date','Day','Agent','Area','Team','Group','Sign in','Sign out','Status','Counted for marks']));
+    days.forEach(d=>ids.forEach(id=>{ const r=roster[id], c=arCell(id,d); out.push(line([d+' Oct',DOW[dow(d)],r.name,r.area,r.team,r.group,c.admin?'marked by admin':c.in,c.out,AR_TXT[c.st]||'',c.st==='mc'?'':c.st==='ok'?'Yes':'No'])); }));
+    const blob=new Blob(['\ufeff'+out.join('\r\n')],{type:'text/csv;charset=utf-8'});
+    const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=`MADROX-attendance-to-${days[days.length-1]||1}Oct.csv`; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
+  }
+
+  function renderPoster(){ $('appLink').textContent=APP_URL.replace('#attend',''); }
+  function renderTabs(){
+    document.querySelectorAll('nav .adm').forEach(b=>b.hidden=!isAdmin);
+    document.querySelectorAll('nav .agt').forEach(b=>b.hidden=isAdmin);
+    $('adminBtn').hidden=isAdmin; $('adminOut').hidden=!isAdmin;
+    const cur=document.querySelector('nav button[aria-selected="true"]');
+    if(cur&&cur.hidden) showTab('checkin');
+  }
+  function render(){
+    renderId();renderDays();renderDayView();renderYT();renderSales();renderMine();renderBoard();renderReview();renderUploads();renderAttRec();renderResults();renderTeam();renderTabs();renderPoster();
+  }
+
+  // ---------- events ----------
+  function showTab(tab){document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===tab));['checkin','board','team','uploads','results','attrec','review','rules','adminLogin'].forEach(t=>$(t).hidden=t!==tab); if(tab==='results') renderResults();}
+  document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]'); if(b){ showTab(b.dataset.tab); if(b.dataset.tab==='attrec') loadTeamAtt(true); }});
+
+  $('idBox').addEventListener('change',e=>{
+    if(e.target.id==='pWho'){pMe=e.target.value||null;draft=null;ui={};render();}
+    if(e.target.id==='pClock'){pClock=+e.target.value;ui={};render();}
+    if(e.target.id==='loginWho'){loginPick=e.target.value;}
+  });
+  async function doLogin(id,pin,silent){
+    busy=true; if(!silent) flash('Logging in…',true); renderId();
+    try{ const r=await rpc('agent_login',{p_id:id,p_pin:pin,p_device:DEVICE}); me={...r.agent,pin}; myState=r.state; myCredits=r.credits||[]; setClock(r.clock); store.set('madrox-login',{id,pin}); day=Math.min(DAYS,Math.max(1,today())); busy=false; if(!silent) flash('Welcome, '+me.name); render(); }
+    catch(e){ busy=false; if(silent){store.del('madrox-login');} else flash(errText(e)); render(); }
+  }
+  $('idBox').addEventListener('click',e=>{
+    if(e.target.id==='loginGo'){ const id=$('loginWho').value, pin=$('loginPin').value.trim(); if(!id){flash('Choose your name first.');return;} if(!pin){flash('Enter your PIN.');return;} doLogin(id,pin); }
+    if(e.target.id==='logout'){ me=null; myState=null; teamAtt={}; teamAttAt=0; draft=null; ui={}; store.del('madrox-login'); render(); }
+  });
+  $('idBox').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='loginPin'){ e.preventDefault(); $('loginGo').click(); } });
+  $('days').addEventListener('click',e=>{const b=e.target.closest('[data-day]');if(!b||b.disabled)return;day=+b.dataset.day;ui={};render();});
+
+  const dv=$('dayView');
+  dv.addEventListener('input',e=>{
+    if(!draft) return; const t=e.target;
+    if(t.dataset.a!==undefined){draft.appts[+t.dataset.a][t.dataset.f]=t.value; const u=draft.appts.filter(r=>r.client.trim()).reduce((s,r)=>s+unitOf(r),0); const l=$('apptLabel'); if(l) l.textContent=apptLabel(u); ui.repConfirm=false; ui.apConfirm=false; if(ui.apMsg&&!ui.apMsg.ok) ui.apMsg=null; if(t.dataset.f==='role'){ const w=$('aw-'+t.dataset.a); if(w&&w.options[0]) w.options[0].textContent=t.value==='both'?'With: no one':'With whom? (optional)'; }}
+    if(t.id==='reelUrl'){draft.reel=t.value;ui.repConfirm=false;ui.rlConfirm=false;}
+    if(t.id==='mcReason') draft.mcReason=t.value;
+  });
+  const MSG={video:'The learning video can only be uploaded between 9:00am and 10:00am.',att:'Sign in is open from 9:45am to 10:00am, Monday to Friday.',out:'Sign out is open until 11:59pm.',main:'This is open from 10:00am to 11:59pm.'};
+  const guard=(k='main')=>{ if(day!==today()){ui={};render();flash('Check in on today instead.');return true;} if(!openFor(k)){ui={};render();flash(MSG[k]);return true;} return false; };
+  const guardOld=()=>{ if(day!==today()){ui={};render();flash('Check in on today instead.');return true;} if(!inWindow()){ui={};render();flash('This is open from 10:00am to 11:59pm.');return true;} return false; };
+  dv.addEventListener('change',async e=>{
+    const t=e.target; if(!draft||!t.files||!t.files[0]) return;
+    if(t.id==='inPhoto'||t.id==='mcFile'){ try{const b=await compress(t.files[0]); if(t.id==='inPhoto') draft.inImg=b; else draft.mcImg=b; renderDayView();}catch(err){flash(err.message);} }
+    if(t.id==='vFile'){
+      if(guard('video')) return; const f=t.files[0];
+      if(!/^video\//.test(f.type)){flash('Please choose a video file.');return;}
+      if(f.size>MAX_VIDEO_MB*1024*1024){flash(`That video is ${(f.size/1048576).toFixed(1)} MB. The limit is ${MAX_VIDEO_MB} MB – trim it shorter or record in lower quality.`);return;}
+      busy=true; flash('Uploading video… keep this page open.',true); render();
+      try{ const ext=(f.name.split('.').pop()||'mp4').toLowerCase().slice(0,5); const path=await upload('video',f,ext); busy=false; await act('video',{path},{vid:{[key(day)]:{file:path,at:now()}}},'Video uploaded'); }
+      catch(err){ busy=false; flash(err.message); render(); }
+    }
+  });
+  dv.addEventListener('click',async e=>{
+    const id=e.target.id; if(!draft||busy) return;
+    if(id==='vCheck'){ if(guard('video')) return; act('video',{},{vid:{[key(day)]:{done:true,at:now()}}},'Learning video checked in'); return; }
+    if(id==='signIn'){ if(guard('att')) return; act('signin',{},{att:{[key(day)]:{in:now()}}},'Signed in'); return; }
+    if(id==='signOut'){ if(guard('out')) return; act('signout',{},{att:{[key(day)]:{out:now()}}},'Signed out'); return; }
+    if(id==='apptAdd'){ if(draft.appts.length<6) draft.appts.push({time:'',client:'',note:'',role:'both',with:''}); renderDayView(); return; }
+    if(id==='apGo'){ if(!draft.appts[0].client.trim()){flash('Write the client name first.');return;} ui.apConfirm=true; renderDayView(); return; }
+    if(id==='apNo'){ ui.apConfirm=false; renderDayView(); return; }
+    if(id==='apYes'){ const r=draft.appts[0];
+      if(!String(r.client||'').trim()){ ui.apMsg={ok:false,text:'Write the client name first.'}; renderDayView(); return; }
+      if(day!==today()){ ui.apMsg={ok:false,text:'You can only add appointments for today.'}; renderDayView(); return; }
+      if(!openFor('main')){ ui.apMsg={ok:false,text:'Appointments are open from 10:00am to 11:59pm.'}; renderDayView(); return; }
+      const k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
+      const item={time:r.time,client:r.client.trim(),note:r.note.trim(),role:'both',with:''}, n=(cur.appts||[]).length+1;
+      const ok=await act('appt',item,{days:{[k]:{appts:[...(cur.appts||[]),{...item,at:now()}],reel:cur.reel||'',at:cur.at||now()}}},`Appointment ${n} saved`);
+      ui.apMsg=ok?{ok:true,text:`\u2713 Appointment ${n} saved`}:{ok:false,text:'Not saved: '+lastActErr+' Please try again or tell Alicia.'};
+      renderDayView(); return; }
+    if(id==='rlGo'){ if(!isUrl(draft.reel)){flash('Paste the full reel link, starting with https://');return;} ui.rlConfirm=true; renderDayView(); return; }
+    if(id==='rlNo'){ ui.rlConfirm=false; renderDayView(); return; }
+    if(id==='rlYes'){ const reel=String(draft.reel||'').trim();
+      if(!isUrl(reel)){ ui.rlMsg={text:'Paste the full reel link, starting with https://'}; renderDayView(); return; }
+      if(day!==today()||!openFor('main')){ ui.rlMsg={text:'The reel link is open from 10:00am to 11:59pm today.'}; renderDayView(); return; }
+      const k=key(day), cur=(dataOf(myAgent()).days||{})[k]||{};
+      const ok=await act('reel',{reel},{days:{[k]:{appts:cur.appts||[],reel,reelAt:now(),at:cur.at||now()}}},'Reel link saved');
+      if(!ok){ ui.rlMsg={text:'Not saved: '+lastActErr}; renderDayView(); } return; }
+    if(id==='repNo'){ ui.repConfirm=false; renderDayView(); return; }
+    if(id==='repYes'){ if(guard()) return; const appts=draft.appts.filter(r=>r.client.trim()).map(r=>({time:r.time,client:r.client.trim(),note:r.note.trim(),role:r.role||'both',with:r.with||''}));
+      const reel=isWeekday(day)&&isUrl(draft.reel)?draft.reel.trim():''; act('report',{appts,reel},{days:{[key(day)]:{appts,reel,at:now()}}},'Daily report submitted'); return; }
+    if(id==='mcOpen'){ ui.mcOpen=true; renderDayView(); return; }
+    if(id==='mcCancel'){ ui={}; renderDayView(); return; }
+    if(id==='mcGo'){ if(!draft.mcReason.trim()){flash('Write the reason for your MC.');return;} ui.mcConfirm=true; renderDayView(); return; }
+    if(id==='mcNo'){ ui.mcConfirm=false; renderDayView(); return; }
+    if(id==='mcYes'){ if(guard()) return; busy=true; flash('Uploading letter…',true); render();
+      try{ const path=draft.mcImg?await upload('mc',draft.mcImg,'jpg'):null; busy=false; const reason=draft.mcReason.trim(); await act('mc',{reason,path},{days:{[key(day)]:{mc:true,reason,file:path,at:now()}}},'MC submitted'); }catch(err){busy=false;flash(err.message);render();} return; }
+  });
+  $('ytBox').addEventListener('click',e=>{
+    if(e.target.id!=='ytSend') return; const t=today(); if(t<1||t>DAYS) return; if(!inWindow()){flash('This is open from 10:00am to 11:59pm.');render();return;}
+    const u=($('ytUrl').value||'').trim(); if(!isUrl(u)){flash('Paste the full YouTube link, starting with https://');return;}
+    act('youtube',{url:u},{yt:{['w'+weekOf(t)]:{url:u,at:now()}}},'YouTube submitted for this week');
+  });
+  $('addSale').addEventListener('click',()=>{
+    const t=today(); if(!myAgent()||t<1||t>DAYS) return; if(!inWindow()){flash('This is open from 10:00am to 11:59pm.');render();return;}
+    const note=$('saleNote').value.trim(); if(!note){flash('Write the project and unit of the booking.');return;}
+    const count=Math.round(+$('saleCount').value); if(!(count>=1&&count<=20)){flash('Number of bookings must be between 1 and 20.');return;}
+    const roles=myRoles(); if(!roles.length){flash('Tick your part: closer, caller or ads.');return;}
+    const pct=Math.round(+$('salePct').value*10)/10; if(!(pct>0&&pct<=100)){flash('Type your % of this deal (1 to 100).');return;}
+    const share=pct/100, w=$('saleWith').value.trim();
+    act('sale',{note,count,roles,pct,with:w},{sales:{['s'+Date.now()]:{note,count,day:t,at:now(),cancelled:false,roles,pct,share,with:w}}},count>1?count+' bookings added':'Booking added').then(ok=>{if(ok){$('saleNote').value='';$('saleCount').value='1';$('saleWith').value='';$('salePct').value='';['rCloser','rCaller','rAds'].forEach(i=>$(i).checked=false);renderSales();}});
+  });
+
+  // back office
+  async function loadAdmin(){
+    try{ const r=await rpc('admin_all'); const first=!isAdmin; isAdmin=true; allStates=r.states||{}; setClock(r.clock); if(first) upDay=Math.min(DAYS,Math.max(1,today())); pins={}; phones={}; const ro={}; (r.agents||[]).forEach(a=>{ro[a.id]={name:a.name,area:a.area,team:a.team,group:a.group,role:a.role,excused:+a.excused||0};pins[a.id]=a.pin;phones[a.id]=!!a.phone}); roster=ro; render(); return true; }
+    catch(e){ isAdmin=false; render(); return false; }
+  }
+  $('adminBtn').addEventListener('click',()=>{ showTab('adminLogin'); });
+  $('adminOut').addEventListener('click',async()=>{ await sb.auth.signOut(); isAdmin=false; allStates={}; pins={}; showTab('checkin'); render(); });
+  $('adminForm').addEventListener('submit',async e=>{
+    e.preventDefault(); const msg=$('admMsg'); if(!sb){msg.textContent='The app isn’t connected.';return;}
+    msg.textContent='Logging in…';
+    const {error}=await sb.auth.signInWithPassword({email:$('admEmail').value.trim(),password:$('admPass').value});
+    if(error){msg.textContent='Wrong email or password.';return;}
+    if(await loadAdmin()){ msg.textContent=''; $('admPass').value=''; showTab('board'); }
+    else { msg.textContent='This account isn’t the back-office email set in Supabase.'; await sb.auth.signOut(); }
+  });
+  $('revWho').addEventListener('change',e=>{revWho=e.target.value;renderReview();});
+  $('upDay').addEventListener('change',e=>{upDay=+e.target.value;renderUploads();});
+  $('upPrev').addEventListener('click',()=>{upDay=Math.max(1,upDay-1);renderUploads();});
+  $('upNext').addEventListener('click',()=>{upDay=Math.min(DAYS,upDay+1);renderUploads();});
+  $('upFilter').addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(!b)return;upArea=b.dataset.area;renderUploads();});
+  $('rsDay').addEventListener('change',e=>{rsDay=+e.target.value;renderResults();});
+  $('rsRefresh').addEventListener('click',async()=>{ flash('Refreshing\u2026',true); await loadAdmin(); flash('Up to date'); });
+  $('rsImg').addEventListener('click',saveResultsImage);
+  $('rsCopy').addEventListener('click',()=>{ const ta=$('rsText'), b=$('rsCopy'); const done=()=>{b.textContent='Copied \u2713'; setTimeout(()=>b.textContent='Copy summary',2000);};
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(ta.value):Promise.reject()).then(done,()=>{ ta.focus(); ta.select(); try{document.execCommand('copy');done();}catch(_){ b.textContent='Select and copy the text'; } }); });
+  $('arFilter').addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(!b)return;arArea=b.dataset.area;renderAttRec();});
+  $('arFrom').addEventListener('change',e=>{arFrom=+e.target.value; if(arTo<arFrom) arTo=arFrom; renderAttRec();});
+  $('arTo').addEventListener('change',e=>{arTo=+e.target.value; if(arFrom>arTo) arFrom=arTo; renderAttRec();});
+  $('arImg').addEventListener('click',saveAttImage);
+  $('arDay').addEventListener('change',e=>{arDay=+e.target.value;renderAttRec();});
+  $('arRefresh').addEventListener('click',async()=>{ flash('Refreshing\u2026',true); if(isAdmin) await loadAdmin(); else await loadTeamAtt(true); flash('Up to date'); });
+  $('arCsv').addEventListener('click',downloadAttendance);
+  $('arCopy').addEventListener('click',()=>{ const ta=$('arText'), b=$('arCopy'); const done=()=>{b.textContent='Copied \u2713'; setTimeout(()=>b.textContent='Copy summary',2000);};
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(ta.value):Promise.reject()).then(done,()=>{ ta.focus(); ta.select(); try{document.execCommand('copy');done();}catch(_){ b.textContent='Select and copy the text'; } }); });
+  $('upStatus').addEventListener('click',e=>{const b=e.target.closest('[data-stat]');if(!b)return;upStat=b.dataset.stat;renderUploads();});
+  $('upRefresh').addEventListener('click',async()=>{ flash('Refreshing\u2026',true); await loadAdmin(); flash('Up to date'); });
+  $('upCsv').addEventListener('click',downloadAll);
+  async function adminClick(e){
+    if(await attClick(e)) return;
+    const f=e.target.dataset.file; if(f){ openFile(f,e.target); return; }
+    const id=e.target.dataset.who, d=e.target.dataset.mark, c=e.target.dataset.cancel; if(!id) return;
+    try{
+      if(d){ e.target.textContent='Saving\u2026'; allStates[id]=await rpc('admin_mark',{p_id:id,p_day:+d}); render(); }
+      if(c){ e.target.textContent='Saving\u2026'; allStates[id]=await rpc('admin_sale',{p_id:id,p_sid:c,p_cancelled:e.target.dataset.val==='1'}); render(); }
+    }catch(err){ flash(errText(err)); }
+  }
+  $('saleForm').addEventListener('change',renderSales); $('salePct').addEventListener('input',renderSales);
+  $('upBody').addEventListener('click',adminClick); $('bkAll').addEventListener('click',adminClick);
+  $('teamRows').addEventListener('click',async e=>{const id=e.target.dataset.reset; if(!id) return;
+    if(e.target.dataset.sure!=='1'){e.target.dataset.sure='1';e.target.textContent='Tap again to reset';return;}
+    e.target.textContent='Resetting\u2026'; try{await rpc('admin_reset_device',{p_id:id}); phones[id]=false; render(); flash(roster[id].name+' can now log in on a new phone.');}catch(err){e.target.textContent='Could not reset';}});
+  $('revBody').addEventListener('click',async e=>{
+    if(await attClick(e)) return;
+    const f=e.target.dataset.file; if(f){ openFile(f,e.target); return; }
+    const d=e.target.dataset.mark, c=e.target.dataset.cancel;
+    try{
+      if(d){ e.target.textContent='Saving…'; allStates[revWho]=await rpc('admin_mark',{p_id:revWho,p_day:+d}); render(); }
+      if(e.target.id==='mcMark'){ e.target.textContent='Saving…'; allStates[revWho]=await rpc('admin_mc',{p_id:revWho,p_day:+$('mcDay').value,p_reason:$('mcWhy').value.trim(),p_on:true}); flash('MC day marked'); render(); }
+      if(e.target.dataset.mcoff){ e.target.textContent='Removing…'; allStates[revWho]=await rpc('admin_mc',{p_id:revWho,p_day:+e.target.dataset.mcoff,p_reason:'',p_on:false}); flash('MC day removed'); render(); }
+      if(c){ allStates[revWho]=await rpc('admin_sale',{p_id:revWho,p_sid:c,p_cancelled:e.target.dataset.val==='1'}); render(); }
+    }catch(err){ flash(errText(err)); }
+  });
+  $('copyLink').addEventListener('click',()=>{navigator.clipboard.writeText(APP_URL.replace('#attend','')).then(()=>{$('copyLink').textContent='Copied'},()=>{const r=document.createRange();r.selectNodeContents($('appLink'));const s=getSelection();s.removeAllRanges();s.addRange(r);});});
+
+  // ---------- practice ----------
+  function setPractice(on){
+    practice=on; draft=null; ui={}; pData={}; pMe=on?(me?me.id:null):null; pClock=630;
+    day=Math.min(DAYS,Math.max(1,on?klTodayFrom(Date.now())||1:today()));
+    $('practiceBar').classList.toggle('on',on);
+    $('pTitle').textContent=on?'Practice mode':'Want to try it first?';
+    $('pText').textContent=on?' Tap any day to pretend it’s that day, and set a pretend time. Nothing here is saved.':' Practice mode lets you try every day of October. Nothing you do is saved or shown to anyone.';
+    $('pToggle').textContent=on?'Exit practice':'Start practice';
+    $('pSample').hidden=!(on&&isAdmin); render();
+  }
+  $('pToggle').addEventListener('click',()=>setPractice(!practice));
+  $('pSample').addEventListener('click',()=>{
+    let seed=7; const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
+    const T=(d,m)=>Date.UTC(YEAR,MONTH,d,0,0)-8*3600e3+m*60e3;
+    for(const id of Object.keys(roster)){
+      if(id===pMe) continue; const sk=0.55+rnd()*0.45, p={days:{},att:{},vid:{},yt:{},sales:{}};
+      for(let d=1;d<=DAYS;d++){ const k=key(d); if(rnd()<0.02){p.days[k]={mc:true,at:T(d,700)};continue;}
+        if(rnd()<sk+0.1) p.att[k]={in:T(d,rnd()<sk?630:750),out:T(d,rnd()<sk?1050:1110)};
+        const n=Math.round(rnd()*3*sk); p.days[k]={appts:Array.from({length:n},(_,i)=>({time:'',client:'Client '+(i+1),note:''})),reel:isWeekday(d)&&rnd()<sk?'https://instagram.com/reel/x':'',at:T(d,1100)};
+        if(rnd()<sk+0.05) p.vid[k]={done:true,at:T(d,rnd()<0.85?570:630)}; }
+      for(let w=1;w<=WEEKS.length;w++) if(rnd()<sk) p.yt['w'+w]={url:'https://youtu.be/y',at:T(WEEKS[w-1][0],700)};
+      const n=Math.floor(rnd()*3*sk); for(let i=0;i<n;i++) p.sales['s'+i]={note:'Sample booking',day:1+Math.floor(rnd()*31),cancelled:false};
+      pData[id]=p;
+    }
+    flash('Sample data filled (practice only)'); render();
+  });
+
+  // refresh clock/day every 30s; refresh back office every 60s
+  let lastT=today(); setInterval(()=>{const t=today(); if(t!==lastT){lastT=t; if(!practice){day=Math.min(DAYS,Math.max(1,t)); draft=null; ui={};} } const ae=document.activeElement; const typing=ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName); if(!recEdit&&!attEdit&&!typing) render();},30000);
+  setInterval(()=>{ if(isAdmin&&!practice&&!recEdit&&!attEdit) loadAdmin(); },60000);
+
+  // ---------- start ----------
+  if(location.hash==='#attend') showTab('checkin');
+  showOffline();
+  render();
+  (async()=>{
+    try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true}}); }
+    catch(e){ const n=$('notice'); n.hidden=false; n.textContent='The app couldn’t load. Check your internet connection and reload the page.'; return; }
+    try{ const r=await rpc('roster'); const ro={}; (r.agents||[]).forEach(a=>{ro[a.id]=a}); roster=ro; setClock(r.clock); day=Math.min(DAYS,Math.max(1,today())); render(); }
+    catch(e){ const n=$('notice'); n.hidden=false; n.dataset.kind='err'; n.textContent='Could not reach the check-in server. Check your internet and reload. If it keeps happening, tell Alicia.'; }
+    const saved=store.get('madrox-login'); if(saved&&saved.id&&saved.pin) doLogin(saved.id,saved.pin,true);
+    try{ const {data}=await sb.auth.getSession(); if(data&&data.session) loadAdmin(); }catch(_){}
+  })();
+})();
+</script>
+
+</body>
+</html>
