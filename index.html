@@ -364,9 +364,9 @@ body{margin:0}
     <div class="panel stack">
       <div class="row" style="justify-content:space-between;align-items:flex-end">
         <h2 style="margin:0">Attendance update</h2>
-        <div class="row"><select id="arFrom" class="field" style="width:auto" aria-label="From day"></select><span class="note">to</span><select id="arTo" class="field" style="width:auto" aria-label="To day"></select><button class="btn" id="arImg">Save as image</button></div>
+        <div class="row"><select id="arFrom" class="field" style="width:auto" aria-label="From day"></select><span class="note">to</span><select id="arTo" class="field" style="width:auto" aria-label="To day"></select><button class="btn" id="arImg">Save as image</button><button class="btn" id="arPdf" hidden>Save as PDF</button></div>
       </div>
-      <p class="note" style="margin:0" id="arImgNote">Pick the days. Tap Save as image to keep or share it.</p>
+      <p class="note" style="margin:0" id="arImgNote">Pick the days. Tap Save as image or Save as PDF to keep or share it.</p>
       <div class="arwrap"><div id="arReport" class="arr"></div></div>
     </div>
     <div class="panel stack" id="arSumPanel" hidden>
@@ -501,6 +501,8 @@ body{margin:0}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script>
 (function(){
   // ====== SETTINGS ======
@@ -1262,7 +1264,7 @@ body{margin:0}
   let arErr='';
   function renderAttRec(){
     $('arEyebrow').textContent=isAdmin?'Back office':'Team';
-    $('arCsv').hidden=!isAdmin; $('arSumPanel').hidden=!isAdmin; $('arTblPanel').hidden=!isAdmin;
+    $('arCsv').hidden=!isAdmin; $('arPdf').hidden=!isAdmin; $('arSumPanel').hidden=!isAdmin; $('arTblPanel').hidden=!isAdmin;
     if(!isAdmin&&!me){ $('arFilter').innerHTML=''; $('arReport').className='arr'; $('arReport').innerHTML='<p style="margin:0;color:#5b6470">Log in on the Check in tab to see the team attendance.</p>'; return; }
     if(!isAdmin&&arErr){ $('arReport').className='arr'; $('arReport').innerHTML=`<p style="margin:0;color:#b3261e">Couldn\u2019t load attendance: ${esc(arErr)} Tap Refresh to try again.</p>`; return; }
     const days=arDays(); if(!days.length){ $('arReport').className='arr'; $('arReport').innerHTML='<p style="margin:0;color:#5b6470">Attendance starts on Thursday 1 October.</p>'; $('arTable').innerHTML=''; $('arText').value=''; return; }
@@ -1296,6 +1298,54 @@ body{margin:0}
     days.forEach(d=>ids.forEach(id=>{ const r=roster[id], c=arCell(id,d); out.push(line([d+' Oct',DOW[dow(d)],r.name,r.area,r.team,r.group,c.admin?'marked by admin':c.in,c.out,AR_TXT[c.st]||'',c.st==='mc'?'':c.st==='ok'?'Yes':'No'])); }));
     const blob=new Blob(['\ufeff'+out.join('\r\n')],{type:'text/csv;charset=utf-8'});
     const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=`MADROX-attendance-to-${days[days.length-1]||1}Oct.csv`; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
+  }
+
+  // ---------- daily attendance PDF: one page per working day, absentees listed first ----------
+  function downloadAttendancePDF(){
+    if(!window.jspdf){ alert('PDF library did not load. Check your internet and refresh the page.'); return; }
+    const days=arDays(); if(!days.length){ alert('No attendance days yet.'); return; }
+    const R=days.filter(d=>d>=arFrom&&d<=arTo); if(!R.length){ alert('Pick a From / To date first.'); return; }
+    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea));
+    const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'}), W=doc.internal.pageSize.getWidth(), M=14;
+    const COL={ok:[22,128,61],noout:[180,110,0],late:[180,110,0],none:[200,30,30],mc:[90,100,115]};
+    R.forEach((d,pi)=>{
+      if(pi) doc.addPage();
+      const g={ok:[],noout:[],late:[],none:[],mc:[]};
+      const rows=ids.map(id=>{ const r=roster[id], c=arCell(id,d); (g[c.st]||g.none).push(r.name);
+        return {st:c.st, cells:[r.name, `${r.area||''} / Team ${r.team||''} / ${r.group||''}`, c.admin?'Marked':(c.in||'-'), c.admin?'':(c.out||'-'), AR_TXT[c.st]||'']}; });
+      // header
+      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(120); doc.text('MADROX CHALLENGE',M,16);
+      doc.setFontSize(18); doc.setTextColor(20); doc.text(`Attendance - ${DOW[dow(d)]} ${d} Oct 2026`,M,25);
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(80);
+      doc.text(`${ids.length} agents${arArea==='All'?'':' - '+arArea}   |   Present ${g.ok.length}   |   Not signed in ${g.none.length}   |   No sign-out ${g.noout.length}   |   Late ${g.late.length}   |   MC ${g.mc.length}`,M,32);
+      // who did not sign in (red box)
+      let y=38;
+      const absentTxt=g.none.length?g.none.join(', '):'Everyone signed in.';
+      const lines=doc.splitTextToSize(absentTxt,W-2*M-8);
+      const boxH=12+lines.length*5;
+      doc.setFillColor(253,236,236); doc.setDrawColor(200,30,30); doc.roundedRect(M,y,W-2*M,boxH,2,2,'FD');
+      doc.setFont('helvetica','bold'); doc.setTextColor(200,30,30); doc.text(`Did not sign in (${g.none.length})`,M+4,y+6);
+      doc.setFont('helvetica','normal'); doc.setTextColor(40); doc.text(lines,M+4,y+12);
+      y+=boxH+4;
+      if(g.noout.length){ const l2=doc.splitTextToSize(`Signed in but no sign-out (${g.noout.length}): ${g.noout.join(', ')}`,W-2*M);
+        doc.setTextColor(180,110,0); doc.text(l2,M,y+3); y+=l2.length*5+2; }
+      // full table
+      doc.autoTable({startY:y, margin:{left:M,right:M},
+        head:[['Agent','Area / Team / Group','Sign in','Sign out','Status']], body:rows.map(r=>r.cells),
+        styles:{fontSize:9,cellPadding:2}, headStyles:{fillColor:[21,24,29]},
+        didParseCell:c=>{ if(c.section==='body'&&c.column.index===4){ const st=rows[c.row.index].st; c.cell.styles.textColor=COL[st]||[40,40,40]; c.cell.styles.fontStyle='bold'; } }});
+    });
+    // page numbers + footer
+    const n=doc.getNumberOfPages();
+    for(let i=1;i<=n;i++){ doc.setPage(i); doc.setFontSize(8); doc.setTextColor(130);
+      doc.text('Present = signed in 9:45-10:00am and signed out. Late = signed in outside 9:45-10:00am.',M,doc.internal.pageSize.getHeight()-8);
+      doc.text(`Page ${i} of ${n}`,W-M,doc.internal.pageSize.getHeight()-8,{align:'right'}); }
+    const name=`MADROX-attendance-${R[0]===R[R.length-1]?R[0]:R[0]+'-'+R[R.length-1]}Oct.pdf`, note=$('arImgNote');
+    const blob=doc.output('blob'), file=new File([blob],name,{type:'application/pdf'});
+    if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:'MADROX attendance'}).then(()=>{note.textContent='Shared.'}).catch(()=>{note.textContent='Share cancelled. Tap Save as PDF to try again.'});
+      return; }
+    doc.save(name); note.textContent='PDF saved: '+name;
   }
 
   function renderPoster(){ $('appLink').textContent=APP_URL.replace('#attend',''); }
@@ -1435,6 +1485,7 @@ body{margin:0}
   $('arDay').addEventListener('change',e=>{arDay=+e.target.value;renderAttRec();});
   $('arRefresh').addEventListener('click',async()=>{ flash('Refreshing\u2026',true); if(isAdmin) await loadAdmin(); else await loadTeamAtt(true); flash('Up to date'); });
   $('arCsv').addEventListener('click',downloadAttendance);
+  $('arPdf').addEventListener('click',downloadAttendancePDF);
   $('arCopy').addEventListener('click',()=>{ const ta=$('arText'), b=$('arCopy'); const done=()=>{b.textContent='Copied \u2713'; setTimeout(()=>b.textContent='Copy summary',2000);};
     (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(ta.value):Promise.reject()).then(done,()=>{ ta.focus(); ta.select(); try{document.execCommand('copy');done();}catch(_){ b.textContent='Select and copy the text'; } }); });
   $('upStatus').addEventListener('click',e=>{const b=e.target.closest('[data-stat]');if(!b)return;upStat=b.dataset.stat;renderUploads();});
