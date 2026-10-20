@@ -197,6 +197,7 @@ body{margin:0}
 .arr .p-ok{background:#1f5f8b;color:#fff}
 .arr .p-noout{background:#fbe6ad;color:#3b2f06}
 .arr .p-late{background:#e3e5ea;color:#2d3340}
+.arr .p-in{background:#dbe8f3;color:#1f5f8b}
 .arr .p-none{background:#fff;color:#b3261e;box-shadow:inset 0 0 0 1.5px #d9534f}
 .arr .p-mc{background:#fff;color:#4b5563;box-shadow:inset 0 0 0 1.5px #9aa3af}
 .arr .box{break-inside:avoid;border:2px solid #15181d;border-radius:8px;padding:16px 18px;margin:4px 0 18px}
@@ -1144,15 +1145,16 @@ body{margin:0}
   let arArea='All', arDay=0;
   const arDays=()=>{ const t=Math.min(DAYS,Math.max(1,today())), last=clock.test?DAYS:t, out=[]; for(let d=1;d<=last;d++) if(isWeekday(d)) out.push(d); return out; };
   // per agent/day: status + times
-  function arCell(id,d){ const p=dataOf(id), a=(p.att||{})[key(d)]||{}, st=attStatus(p,d);
+  function arCell(id,d){ const p=dataOf(id), a=(p.att||{})[key(d)]||{}; let st=attStatus(p,d); if(st==='noout'&&d===today()) st='in';
     return {st, in:a.in?hhmm(a.in):'', out:a.out?hhmm(a.out):'', admin:!!a.admin}; }
-  const AR_TXT={ok:'Present',noout:'Signed in, no sign-out',late:'Late / outside hours',none:'Absent',mc:'MC'};
+  const AR_TXT={in:'Signed in, sign-out still open',ok:'Present',noout:'Signed in, no sign-out',late:'Late / outside hours',none:'Absent',mc:'MC'};
   function arSummary(d){
-    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea)), g={ok:[],noout:[],late:[],none:[],mc:[]};
+    const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea)), g={in:[],ok:[],noout:[],late:[],none:[],mc:[]};
     ids.forEach(id=>{ const c=arCell(id,d); (g[c.st]||g.none).push(roster[id].name+(c.st==='late'&&c.in?' ('+c.in+')':'')); });
-    const on=g.ok.length+g.noout.length, L=[];
+    const on=g.ok.length+g.noout.length+g.in.length, L=[];
     L.push(`MADROX attendance \u00b7 ${DOW[dow(d)]} ${d} Oct 2026`+(arArea==='All'?'':' \u00b7 '+arArea));
     L.push(`Signed in on time (9:45\u201310:00am): ${on} of ${ids.length}`);
+    if(g.in.length) L.push(`Still to sign out (open until 11:59pm): ${g.in.length}`);
     L.push(`Signed out as well: ${g.ok.length}`+(g.noout.length?` \u00b7 No sign-out yet: ${g.noout.length} (${g.noout.join(', ')})`:''));
     L.push(`Late: ${g.late.length}`+(g.late.length?' \u2013 '+g.late.join(', '):''));
     L.push(`Absent: ${g.none.length}`+(g.none.length?' \u2013 '+g.none.join(', '):''));
@@ -1160,7 +1162,7 @@ body{margin:0}
     return L.join('\n');
   }
   let arFrom=0, arTo=0;
-  const AR_PILL={ok:'Present',noout:'No sign-out',late:'Late',none:'Absent',mc:'MC'}, AR_SHORT={ok:'\u2713',noout:'No out',late:'Late',none:'\u2717',mc:'MC'};
+  const AR_PILL={in:'Signed in',ok:'Present',noout:'No sign-out',late:'Late',none:'Absent',mc:'MC'}, AR_SHORT={in:'In',ok:'\u2713',noout:'No out',late:'Late',none:'\u2717',mc:'MC'};
   function renderAttReport(days){
     if(!days.includes(arTo)) arTo=days[days.length-1];
     if(!days.includes(arFrom)||arFrom>arTo) arFrom=days[Math.max(0,days.indexOf(arTo)-1)];
@@ -1169,34 +1171,36 @@ body{margin:0}
     if(document.activeElement!==$('arTo')) $('arTo').innerHTML=opt(arTo);
     const R=days.filter(d=>d>=arFrom&&d<=arTo), many=R.length>3, lab=many?AR_SHORT:AR_PILL;
     const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea)), N=ids.length;
-    const cards=R.map(d=>{ const c={ok:0,noout:0,late:0,none:0,mc:0}; ids.forEach(id=>c[arCell(id,d).st]++);
-      const sub=[[c.none,'absent'],[c.noout,'no sign-out'],[c.late,'late'],[c.mc,'MC']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' \u00b7 ')||'Everyone present';
-      return `<div class="card"><div class="d">${DOW[dow(d)]} ${d} Oct</div><div class="n">${c.ok}<small>of ${N} present</small></div><div class="s">${sub}</div></div>`; }).join('');
+    const cards=R.map(d=>{ const c={in:0,ok:0,noout:0,late:0,none:0,mc:0}; ids.forEach(id=>c[arCell(id,d).st]++);
+      const sub=[[c.in?c.ok:0,'signed out'],[c.in,'yet to sign out'],[c.none,'absent'],[c.noout,'no sign-out'],[c.late,'late'],[c.mc,'MC']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' \u00b7 ')||'Everyone present';
+      return `<div class="card"><div class="d">${DOW[dow(d)]} ${d} Oct</div><div class="n">${c.ok+c.in}<small>of ${N} ${c.in?'signed in':'present'}</small></div><div class="s">${sub}</div></div>`; }).join('');
     const teams={}; ids.forEach(id=>{ const r=roster[id], k=`${r.area} \u00b7 Team ${r.team}`; (teams[k]=teams[k]||[]).push(id); });
     const blocks=Object.entries(teams).map(([k,list])=>`<div class="blk"><table><thead><tr><th class="g">${esc(k)}</th>${R.map(d=>`<th>${DOW[dow(d)]} ${d}</th>`).join('')}</tr></thead><tbody>${
       list.map(id=>`<tr><td class="nm">${esc(roster[id].name)}</td>${R.map(d=>{const st=arCell(id,d).st;return `<td><span class="pl p-${st}">${lab[st]}</span></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`).join('');
-    const all=[],some=[],zero=[]; ids.forEach(id=>{ let ok=0,work=0; R.forEach(d=>{const st=arCell(id,d).st; if(st!=='mc')work++; if(st==='ok')ok++;}); (ok&&ok===work?all:ok?some:zero).push(roster[id].name); });
-    const allLab=R.length===1?'Present':R.length===2?'Present both days':`Present all ${R.length} days`, someLab=R.length===2?'Present one day':'Present some days';
-    const box=`<div class="box"><b>${allLab}: ${all.length}</b><p>${esc(all.join(', '))||'\u2013'}</p>${R.length>1?`<b>${someLab}: ${some.length}</b><p>${esc(some.join(', '))||'\u2013'}</p>`:''}<b class="red">No day counted yet: ${zero.length}</b><p>${esc(zero.join(', '))||'\u2013'}</p></div>`;
+    const all=[],some=[],zero=[]; ids.forEach(id=>{ let ok=0,work=0; R.forEach(d=>{const st=arCell(id,d).st; if(st!=='mc')work++; if(st==='ok'||st==='in')ok++;}); (ok&&ok===work?all:ok?some:zero).push(roster[id].name); });
+    const anyIn=R.some(d=>ids.some(id=>arCell(id,d).st==='in')), zeroLab=R.length===1?'Not present':'No day counted yet', allLab=R.length===1?(anyIn?'Signed in':'Present'):R.length===2?'Present both days':`Present all ${R.length} days`, someLab=R.length===2?'Present one day':'Present some days';
+    const box=`<div class="box"><b>${allLab}: ${all.length}</b><p>${esc(all.join(', '))||'\u2013'}</p>${R.length>1?`<b>${someLab}: ${some.length}</b><p>${esc(some.join(', '))||'\u2013'}</p>`:''}<b class="red">${zeroLab}: ${zero.length}</b><p>${esc(zero.join(', '))||'\u2013'}</p></div>`;
     const range=R.length===1?`${DOW[dow(R[0])]} ${R[0]} Oct 2026`:`${DOW[dow(R[0])]} ${R[0]} Oct \u2013 ${DOW[dow(R[R.length-1])]} ${R[R.length-1]} Oct 2026`;
     $('arReport').className='arr'+(R.length>4?' wide':'');
     $('arReport').innerHTML=`<div class="eb">MADROX Challenge</div><h3>Attendance Update</h3><div class="sub">${range} \u00b7 ${N} agents${arArea==='All'?'':' \u00b7 '+esc(arArea)}</div>
       <div class="cards">${cards}</div><div class="cols">${blocks}${box}</div>
-      <div class="ft">Present = signed in 9:45\u201310:00am and signed out. No sign-out = signed in but did not sign out, so the day is not counted. Late = signed in after 10:00am.${many?' \u2713 Present \u00b7 \u2717 Absent.':''}</div>`;
+      <div class="ft">Signed in = signed in on time today, can still sign out until 11:59pm. Present = signed in 9:45\u201310:00am and signed out. No sign-out = signed in but did not sign out, so the day is not counted. Late = signed in after 10:00am.${many?' \u2713 Present \u00b7 \u2717 Absent.':''}</div>`;
   }
   // the same report as data, used to draw the image
   function arModel(){
     const days=arDays(), R=days.filter(d=>d>=arFrom&&d<=arTo), many=R.length>3, lab=many?AR_SHORT:AR_PILL;
     const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea)), N=ids.length;
-    const cards=R.map(d=>{ const c={ok:0,noout:0,late:0,none:0,mc:0}; ids.forEach(id=>c[arCell(id,d).st]++);
-      return {label:`${DOW[dow(d)]} ${d} Oct`.toUpperCase(), ok:c.ok, sub:[[c.none,'absent'],[c.noout,'no sign-out'],[c.late,'late'],[c.mc,'MC']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' · ')||'Everyone present'}; });
+    const cards=R.map(d=>{ const c={in:0,ok:0,noout:0,late:0,none:0,mc:0}; ids.forEach(id=>c[arCell(id,d).st]++);
+      return {label:`${DOW[dow(d)]} ${d} Oct`.toUpperCase(), ok:c.ok+c.in, word:c.in?'signed in':'present', sub:[[c.in?c.ok:0,'signed out'],[c.in,'yet to sign out'],[c.none,'absent'],[c.noout,'no sign-out'],[c.late,'late'],[c.mc,'MC']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' · ')||'Everyone present'}; });
     const tm={}; ids.forEach(id=>{ const r=roster[id], k=`${r.area} · Team ${r.team}`; (tm[k]=tm[k]||[]).push({name:r.name,sts:R.map(d=>arCell(id,d).st)}); });
-    const all=[],some=[],zero=[]; ids.forEach(id=>{ let ok=0,work=0; R.forEach(d=>{const st=arCell(id,d).st; if(st!=='mc')work++; if(st==='ok')ok++;}); (ok&&ok===work?all:ok?some:zero).push(roster[id].name); });
+    const all=[],some=[],zero=[]; ids.forEach(id=>{ let ok=0,work=0; R.forEach(d=>{const st=arCell(id,d).st; if(st!=='mc')work++; if(st==='ok'||st==='in')ok++;}); (ok&&ok===work?all:ok?some:zero).push(roster[id].name); });
+    const anyIn=R.some(d=>ids.some(id=>arCell(id,d).st==='in'));
     const range=R.length===1?`${DOW[dow(R[0])]} ${R[0]} Oct 2026`:`${DOW[dow(R[0])]} ${R[0]} Oct – ${DOW[dow(R[R.length-1])]} ${R[R.length-1]} Oct 2026`;
     return {R,many,lab,N,cards,teams:Object.entries(tm).map(([name,rows])=>({name,rows})),all,some,zero,
       sub:`${range} · ${N} agents${arArea==='All'?'':' · '+arArea}`, heads:R.map(d=>`${DOW[dow(d)]} ${d}`.toUpperCase()),
-      allLab:R.length===1?'Present':R.length===2?'Present both days':`Present all ${R.length} days`, someLab:R.length===2?'Present one day':'Present some days'};
+      zeroLab:R.length===1?'Not present':'No day counted yet', allLab:R.length===1?(anyIn?'Signed in':'Present'):R.length===2?'Present both days':`Present all ${R.length} days`, someLab:R.length===2?'Present one day':'Present some days'};
   }
+  const anyInImg=M=>M.teams.some(t=>t.rows.some(r=>r.sts.includes('in')));
   function drawAttCanvas(){
     const M=arModel(), W=1080, P=56, S=2, F='Arial, Helvetica, sans-serif';
     const cv=document.createElement('canvas'), x=cv.getContext('2d');
@@ -1208,7 +1212,7 @@ body{margin:0}
     const pillW=Math.min(112,(colW-nameW-6*(M.R.length-1))/M.R.length), ROW=38, HEAD=40;
     const per=M.R.length<=2?2:Math.min(4,M.R.length), cardRows=Math.ceil(M.cards.length/per), cardH=M.R.length<=2?180:128, cardW=(W-2*P-24*(per-1))/per;
     const blkH=t=>HEAD+t.rows.length*ROW+22;
-    font(400,15); const boxW=colW-48; const bx=[[M.allLab+': '+M.all.length,M.all,'#15181d']].concat(M.R.length>1?[[M.someLab+': '+M.some.length,M.some,'#15181d']]:[]).concat([['No day counted yet: '+M.zero.length,M.zero,'#b3261e']]).map(([h,names,col])=>({h,col,lines:wrap(names.join(', ')||'–',boxW)}));
+    font(400,15); const boxW=colW-48; const bx=[[M.allLab+': '+M.all.length,M.all,'#15181d']].concat(M.R.length>1?[[M.someLab+': '+M.some.length,M.some,'#15181d']]:[]).concat([[M.zeroLab+': '+M.zero.length,M.zero,'#b3261e']]).map(([h,names,col])=>({h,col,lines:wrap(names.join(', ')||'–',boxW)}));
     const boxH=bx.reduce((a,g)=>a+26+g.lines.length*21+14,0)+30;
     const items=M.teams.map(t=>({t,h:blkH(t)})).concat([{box:true,h:boxH+18}]);
     const cols=[[],[]]; if(two){ const first=M.teams.length?M.teams[0].name.split(' \u00b7 ')[0]:'', multi=M.teams.some(t=>t.name.split(' \u00b7 ')[0]!==first); let n=0; items.forEach(i=>{ if(i.box) cols[1].push(i); else if(multi) (i.t.name.split(' \u00b7 ')[0]===first?cols[0]:cols[1]).push(i); else (n++<Math.ceil(M.teams.length/2)?cols[0]:cols[1]).push(i); }); } else cols[0]=items;
@@ -1222,10 +1226,10 @@ body{margin:0}
     M.cards.forEach((c,i)=>{ const X=P+(i%per)*(cardW+24), Y=200+Math.floor(i/per)*(cardH+18); x.fillStyle='#f1f3f7'; rr(X,Y,cardW,cardH,8); x.fill();
       const big=M.R.length<=2?72:48; font(700,M.R.length<=2?15:12); x.fillStyle='#4b5563'; x.fillText(c.label,X+24,Y+(M.R.length<=2?38:28));
       font(800,big); x.fillStyle='#1f5f8b'; x.fillText(String(c.ok),X+24,Y+(M.R.length<=2?112:80)); const nw=x.measureText(String(c.ok)).width;
-      font(700,M.R.length<=2?21:14); x.fillStyle='#15181d'; x.fillText(`of ${M.N} present`,X+24+nw+12,Y+(M.R.length<=2?112:80));
+      font(700,M.R.length<=2?21:14); x.fillStyle='#15181d'; x.fillText(`of ${M.N} ${c.word}`,X+24+nw+12,Y+(M.R.length<=2?112:80));
       font(400,M.R.length<=2?17:12); x.fillStyle='#374151'; wrap(c.sub,cardW-40).slice(0,2).forEach((ln,j)=>x.fillText(ln,X+24,Y+(M.R.length<=2?152:104)+j*16)); });
     // ---- columns ----
-    const PILL={ok:['#1f5f8b','#fff',0],noout:['#fbe6ad','#3b2f06',0],late:['#e3e5ea','#2d3340',0],none:['#fff','#b3261e','#d9534f'],mc:['#fff','#4b5563','#9aa3af']};
+    const PILL={in:['#dbe8f3','#1f5f8b',0],ok:['#1f5f8b','#fff',0],noout:['#fbe6ad','#3b2f06',0],late:['#e3e5ea','#2d3340',0],none:['#fff','#b3261e','#d9534f'],mc:['#fff','#4b5563','#9aa3af']};
     cols.forEach((col,ci)=>{ let Y=top; const X0=P+ci*(colW+gap);
       col.forEach(it=>{ if(it.box){ x.strokeStyle='#15181d'; x.lineWidth=2; rr(X0,Y,colW,boxH,8); x.stroke(); let yy=Y+34;
           bx.forEach(g=>{ font(700,17); x.fillStyle=g.col; x.fillText(g.h,X0+24,yy); yy+=24; font(400,15); x.fillStyle='#374151'; g.lines.forEach(ln=>{x.fillText(ln,X0+24,yy); yy+=21;}); yy+=16; }); }
@@ -1240,7 +1244,8 @@ body{margin:0}
         Y+=it.h; }); });
     // ---- footer ----
     x.fillStyle='#e3e6eb'; x.fillRect(P,H-58,W-2*P,1); font(400,13); x.fillStyle='#5b6470';
-    x.fillText('Present = signed in 9:45–10:00am and signed out. No sign-out = signed in but did not sign out, so the day is not counted. Late = signed in after 10:00am.'+(M.many?'  \u2713 Present \u00b7 \u2717 Absent.':''),P,H-34,W-2*P);
+    const ft=['Present = signed in 9:45–10:00am and signed out. No sign-out = signed in but did not sign out, so the day is not counted. Late = signed in after 10:00am.'+(M.many?'  \u2713 Present \u00b7 \u2717 Absent.':'')]; if(anyInImg(M)) ft.unshift('Signed in = signed in on time today, can still sign out until 11:59pm.');
+    ft.forEach((t,k)=>x.fillText(t,P,H-(ft.length===2?40:34)+k*19,W-2*P));
     return cv;
   }
   async function saveAttImage(){
@@ -1282,6 +1287,7 @@ body{margin:0}
         if(c.st==='mc') return '<td class="a-mid">MC</td>';
         if(c.st==='ok') return `<td class="a-ok">\u2713<small>${c.admin?'marked':c.in+'\u2013'+c.out}</small></td>`;
         if(c.st==='noout') return `<td class="a-mid">No out<small>in ${c.in}</small></td>`;
+        if(c.st==='in') return `<td class="a-mid">In<small>in ${c.in}</small></td>`;
         if(c.st==='late') return `<td class="a-bad">Late<small>${c.in}${c.out?'\u2013'+c.out:''}</small></td>`;
         return '<td class="a-bad">\u2717</td>'; }).join('');
       rows+=`<tr><td><b>${esc(r.name)}</b></td>${tds}<td class="n"><b>${ok}/${work}</b></td></tr>`; });
@@ -1307,17 +1313,17 @@ body{margin:0}
     const R=days.filter(d=>d>=arFrom&&d<=arTo); if(!R.length){ alert('Pick a From / To date first.'); return; }
     const ids=sortIds(Object.keys(roster).filter(id=>arArea==='All'||roster[id].area===arArea));
     const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'}), W=doc.internal.pageSize.getWidth(), M=14;
-    const COL={ok:[22,128,61],noout:[180,110,0],late:[180,110,0],none:[200,30,30],mc:[90,100,115]};
+    const COL={in:[31,95,139],ok:[22,128,61],noout:[180,110,0],late:[180,110,0],none:[200,30,30],mc:[90,100,115]};
     R.forEach((d,pi)=>{
       if(pi) doc.addPage();
-      const g={ok:[],noout:[],late:[],none:[],mc:[]};
+      const g={in:[],ok:[],noout:[],late:[],none:[],mc:[]};
       const rows=ids.map(id=>{ const r=roster[id], c=arCell(id,d); (g[c.st]||g.none).push(r.name);
         return {st:c.st, cells:[r.name, `${r.area||''} / Team ${r.team||''} / ${r.group||''}`, c.admin?'Marked':(c.in||'-'), c.admin?'':(c.out||'-'), AR_TXT[c.st]||'']}; });
       // header
       doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(120); doc.text('MADROX CHALLENGE',M,16);
       doc.setFontSize(18); doc.setTextColor(20); doc.text(`Attendance - ${DOW[dow(d)]} ${d} Oct 2026`,M,25);
       doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(80);
-      doc.text(`${ids.length} agents${arArea==='All'?'':' - '+arArea}   |   Present ${g.ok.length}   |   Not signed in ${g.none.length}   |   No sign-out ${g.noout.length}   |   Late ${g.late.length}   |   MC ${g.mc.length}`,M,32);
+      doc.text(`${ids.length} agents${arArea==='All'?'':' - '+arArea}   |   ${g.in.length?`Signed in ${g.ok.length+g.in.length} (${g.in.length} yet to sign out)`:`Present ${g.ok.length}`}   |   Not signed in ${g.none.length}   |   No sign-out ${g.noout.length}   |   Late ${g.late.length}   |   MC ${g.mc.length}`,M,32);
       // who did not sign in (red box)
       let y=38;
       const absentTxt=g.none.length?g.none.join(', '):'Everyone signed in.';
@@ -1338,7 +1344,7 @@ body{margin:0}
     // page numbers + footer
     const n=doc.getNumberOfPages();
     for(let i=1;i<=n;i++){ doc.setPage(i); doc.setFontSize(8); doc.setTextColor(130);
-      doc.text('Present = signed in 9:45-10:00am and signed out. Late = signed in outside 9:45-10:00am.',M,doc.internal.pageSize.getHeight()-8);
+      doc.text('Present = signed in 9:45-10:00am and signed out. Signed in = today, sign-out open until 11:59pm. Late = outside 9:45-10:00am.',M,doc.internal.pageSize.getHeight()-8);
       doc.text(`Page ${i} of ${n}`,W-M,doc.internal.pageSize.getHeight()-8,{align:'right'}); }
     const name=`MADROX-attendance-${R[0]===R[R.length-1]?R[0]:R[0]+'-'+R[R.length-1]}Oct.pdf`, note=$('arImgNote');
     const blob=doc.output('blob'), file=new File([blob],name,{type:'application/pdf'});
