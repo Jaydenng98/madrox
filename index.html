@@ -412,7 +412,7 @@ body{margin:0}
     <div class="panel">
       <h2>App link for agents</h2>
       <div class="row"><code id="appLink" style="font-size:13px;word-break:break-all"></code><button class="btn ghost" id="copyLink">Copy link</button></div>
-      <p class="note" style="margin:8px 0 0">Office presence: Monday to Friday only. Agents sign in 9:45am–10:00am and sign out any time before 11:59pm. Post the group photo in the group chat, then tick Sign in.</p>
+      <p class="note" style="margin:8px 0 0">Office presence: Monday to Friday only. Agents sign in 9:45am–10:00am and sign out from 6:00pm (by 11:59pm). Signing out before 6:00pm still counts but is marked “Left early”. Post the group photo in the group chat, then tick Sign in.</p>
     </div>
     <div class="panel">
       <h2>How marks work</h2>
@@ -422,7 +422,7 @@ body{margin:0}
           <ul>
             <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
             <li>Learning video 9–10am. Appointments, reel, YouTube and bookings 10am–11:59pm.</li>
-            <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
+            <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out from 6:00pm (by 11:59pm). Both are needed. Signing out before 6:00pm still counts but is marked “Left early” on the attendance report.</li>
             <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Log every appointment you have; 2 a day count for marks. Every appointment = 1: just add the time, client name and project.</li>
             <li>Reels: 1 a day with the link (its own submit), Monday to Friday only, 22 days</li>
             <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
@@ -471,7 +471,7 @@ body{margin:0}
           <ul>
             <li>5 tasks × 10 marks. Done ÷ target × 10, max 10 each.</li>
             <li>Learning video 9–10am. Appointments, reel, YouTube and bookings 10am–11:59pm.</li>
-            <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out any time before 11:59pm. Both are needed.</li>
+            <li>Office presence: Monday to Friday only, 22 days. Post the group photo in the group chat, then tap Sign in between 9:45am and 10:00am. Tap Sign out from 6:00pm (by 11:59pm). Both are needed. Signing out before 6:00pm still counts but is marked “Left early” on the attendance report.</li>
             <li>Appointments: 2 a day with client names, every day (target 62). Submit each appointment on its own. Log every appointment you have; 2 a day count for marks. Every appointment = 1: just add the time, client name and project.</li>
             <li>Reels: 1 a day with the link (its own submit), Monday to Friday only, 22 days</li>
             <li>Learning video: share it with your group, then check in on the app between 9am and 10am, every day, 31 days</li>
@@ -722,7 +722,7 @@ body{margin:0}
       if(!a.in&&canAtt){
         att+=`<button class="btn" id="signIn" ${busy?'disabled':''}>\u2713 Sign in now</button>`;
       } else if(!a.in) att+=`<p class="note" style="margin:0">${day===t&&!tst&&m<ATT_FROM?'Sign-in opens at 9:45am.':afterSix?'Sign-in closed at 10:00am, so no attendance mark today.':'No sign-in this day.'}</p>`;
-      att+=`<div class="task"><div><b>Sign out</b><small>After signing in, any time until 11:59pm</small></div>${a.out?chip(outOk,'\u2713 '+hhmm(a.out)):''}</div>`;
+      att+=`<div class="task"><div><b>Sign out</b><small>From 6:00pm until 11:59pm. Before 6:00pm is marked “Left early” (still counts).</small></div>${a.out?chip(outOk,'\u2713 '+hhmm(a.out)+(minsKL(a.out)<18*60?' \u00b7 left early':'')):''}</div>`;
       if(a.in&&!a.out){
         att+= canOut?`<button class="btn" id="signOut" ${dis}>Sign out now</button>`:`<p class="note" style="margin:0">${day<t?'Not signed out by 11:59pm, so this day\u2019s attendance doesn\u2019t count.':''}</p>`;
       }
@@ -1422,7 +1422,7 @@ body{margin:0}
     const id=e.target.id; if(!draft||busy) return;
     if(id==='vCheck'){ if(guard('video')) return; act('video',{},{vid:{[key(day)]:{done:true,at:now()}}},'Learning video checked in'); return; }
     if(id==='signIn'){ if(guard('att')) return; act('signin',{},{att:{[key(day)]:{in:now()}}},'Signed in'); return; }
-    if(id==='signOut'){ if(guard('out')) return; act('signout',{},{att:{[key(day)]:{out:now()}}},'Signed out'); return; }
+    if(id==='signOut'){ if(guard('out')) return; if(!practice&&!clock.test&&minsKL(now())<18*60&&!confirm('It\u2019s before 6:00pm. If you sign out now, you\u2019ll be marked \u201cLeft early\u201d on the attendance report (the day still counts).\n\nSign out now?')) return; act('signout',{},{att:{[key(day)]:{out:now()}}},'Signed out'); return; }
     if(id==='apptAdd'){ if(draft.appts.length<6) draft.appts.push({time:'',client:'',note:'',role:'both',with:''}); renderDayView(); return; }
     if(id==='apGo'){ if(!draft.appts[0].client.trim()){flash('Write the client name first.');return;} ui.apConfirm=true; renderDayView(); return; }
     if(id==='apNo'){ ui.apConfirm=false; renderDayView(); return; }
