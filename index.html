@@ -95,6 +95,7 @@ details{grid-column:1 / 4}
 summary{cursor:pointer;font-size:13px;color:var(--muted)}
 .tbl{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.tdt td.n,.tdt th.n{text-align:right}.tdt tr.we td{color:var(--muted);background:rgba(127,127,127,.06)}.tdt tr.tot td{font-weight:700;border-top:2px solid var(--muted)}.tdt .lo{color:#b3261e;font-weight:600}.tdt small{color:var(--muted);font-weight:400}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
 th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
 td.n,th.n{text-align:right}
@@ -254,6 +255,7 @@ body{margin:0}
     <button role="tab" id="t-team" aria-selected="false" data-tab="team" class="adm" hidden>Teams &amp; rules</button>
     <button role="tab" id="t-uploads" aria-selected="false" data-tab="uploads" class="adm" hidden>Daily records</button>
     <button role="tab" id="t-results" aria-selected="false" data-tab="results" class="adm" hidden>Results</button>
+    <button role="tab" id="t-teamday" aria-selected="false" data-tab="teamday" class="adm" hidden>Team daily</button>
     <button role="tab" id="t-attrec" aria-selected="false" data-tab="attrec">Attendance</button>
     <button role="tab" id="t-review" aria-selected="false" data-tab="review" class="adm" hidden>Review</button>
     <button role="tab" id="t-rules" aria-selected="false" data-tab="rules" class="agt">How marks work</button>
@@ -335,6 +337,19 @@ body{margin:0}
       <p class="note" style="margin:6px 0 0">Every booking entry from 1 October to today (follows the area filter). Each person logs their own part and %, so one deal can appear several times. The %s for one deal should add up to 100. Mark an entry cancelled if it’s wrong or the deal falls through.</p>
       <div class="tbl" style="margin-top:10px" id="bkAll"></div>
     </div>
+  </section>
+
+  <!-- TEAM DAILY KPIs (admin only) -->
+  <section id="teamday" class="stack" hidden>
+    <div class="panel stack">
+      <div><span class="label">Back office · only you can see this</span><h2 style="margin:0">Team daily</h2></div>
+      <p class="note" style="margin:0">Each team’s KPIs day by day. Numbers show how many agents did it out of the agents working that day (agents on MC are left out). Bookings are marks after each person’s share, the same as Daily records.</p>
+      <div class="row" id="tdFilter"></div>
+      <div class="row"><select id="tdFrom" class="field" style="width:auto" aria-label="From day"></select><span class="note">to</span><select id="tdTo" class="field" style="width:auto" aria-label="To day"></select></div>
+      <div class="row"><button class="btn ghost" id="tdRefresh">↻ Refresh</button><button class="btn" id="tdImg">Save as image</button><button class="btn" id="tdPdf">Save as PDF</button></div>
+      <p class="note" id="tdNote" style="margin:0"></p>
+    </div>
+    <div id="tdBody" class="stack"></div>
   </section>
 
   <!-- RESULTS UPDATE (admin only) -->
@@ -1254,6 +1269,131 @@ body{margin:0}
     ft.forEach((t,k)=>x.fillText(t,P,H-(ft.length===2?40:34)+k*19,W-2*P));
     return cv;
   }
+  // ---------- team daily KPIs (back office) ----------
+  const TD_BRAND='MADROX', TD_LAB=(d=>d+' Oct'), TD_COLS=[{k:'qr',l:'Attendance',wd:1},{k:'video',l:'Learning video'},{k:'appt',l:'Appointments',x:2},{k:'reel',l:'Reels',wd:1}], TD_YT=true;
+  let tdTeam='All', tdFrom=1, tdTo=0;
+  const tdLast=()=>clock.test?DAYS:Math.min(DAYS,Math.max(1,today()));
+  function tdTeams(){
+    const m={}; sortIds(Object.keys(roster)).forEach(id=>{const r=roster[id]; const k=(AREAS.length>1&&r.area?r.area+' · ':'')+'Team '+(r.team||'?'); (m[k]=m[k]||[]).push(id);});
+    return Object.keys(m).map(k=>({name:k,ids:m[k]}));
+  }
+  function tdModel(){
+    const L=tdLast(); if(!tdTo||tdTo>L) tdTo=L; if(tdFrom>tdTo) tdFrom=tdTo;
+    const teams=tdTeams().filter(t=>tdTeam==='All'||t.name===tdTeam).map(t=>{
+      const rows=[];
+      for(let d=tdFrom;d<=tdTo;d++){ const wd=isWeekday(d), r={d,wd,on:0,mc:0,bk:0}; TD_COLS.forEach(c=>r[c.k]=0);
+        t.ids.forEach(id=>{const p=dataOf(id), c=dayChecks(p,d);
+          bookingsOf(p,d).forEach(([,x])=>{if(!x.cancelled) r.bk+=cnt(x)*ownShare(x)});
+          if(c.mc){r.mc++;return;} r.on++; TD_COLS.forEach(k=>{r[k.k]+=k.x?(+c[k.k]||0):(c[k.k]?1:0)});});
+        rows.push(r); }
+      const tot={on:0,mc:0,bk:0}; TD_COLS.forEach(c=>{tot[c.k]=0; tot[c.k+'_of']=0;});
+      rows.forEach(r=>{tot.mc+=r.mc; tot.bk+=r.bk; TD_COLS.forEach(c=>{ if(c.wd&&!r.wd) return; tot[c.k]+=r[c.k]; tot[c.k+'_of']+=r.on*(c.x||1); });});
+      let yt=null;
+      if(TD_YT&&typeof weekOf==='function'){ const wk=[...new Set(rows.map(r=>weekOf(r.d)).filter(w=>w>0))];
+        yt=wk.map(w=>({w, done:t.ids.filter(id=>{const y=(dataOf(id).yt||{})['w'+w]; return y&&isUrl(y.url);}).length})); }
+      return {name:t.name,n:t.ids.length,rows,tot,yt};
+    });
+    const range=tdFrom===tdTo?`${DOW[dow(tdFrom)]} ${TD_LAB(tdFrom)}`:`${DOW[dow(tdFrom)]} ${TD_LAB(tdFrom)} – ${DOW[dow(tdTo)]} ${TD_LAB(tdTo)}`;
+    return {teams,range};
+  }
+  // one cell: text + whether it's low (under half)
+  function tdCell(c,r,isTot){
+    if(!isTot&&c.wd&&!r.wd) return {t:'–'};
+    const done=r[c.k], of=isTot?r[c.k+'_of']:r.on*(c.x||1);
+    if(!of) return {t:'–'};
+    return {t:`${nfmt(done)}/${of}`, p:Math.round(done/of*100), lo:done/of<0.5};
+  }
+  function tdTableRows(T){
+    const head=['Day',...TD_COLS.map(c=>c.l),'Bookings','MC'];
+    const body=T.rows.map(r=>({we:!r.wd, cells:[`${DOW[dow(r.d)]} ${TD_LAB(r.d)}`,...TD_COLS.map(c=>tdCell(c,r)),{t:r.bk?nfmt(r.bk):'0'},{t:r.mc?String(r.mc):''}]}));
+    const tot={tot:true, cells:['Total',...TD_COLS.map(c=>tdCell(c,T.tot,true)),{t:nfmt(T.tot.bk)},{t:T.tot.mc?String(T.tot.mc):''}]};
+    return {head,body:body.concat([tot])};
+  }
+  function renderTeamDaily(){
+    if(!isAdmin) return;
+    const L=tdLast(), names=tdTeams().map(t=>t.name); if(tdTeam!=='All'&&!names.includes(tdTeam)) tdTeam='All';
+    $('tdFilter').innerHTML=['All'].concat(names).map(a=>`<button class="fchip${a===tdTeam?' on':''}" data-tdteam="${esc(a)}">${a==='All'?'All teams':esc(a)}</button>`).join('');
+    const M=tdModel();
+    const opt=v=>Array.from({length:L},(_,i)=>i+1).map(d=>`<option value="${d}"${d===v?' selected':''}>${DOW[dow(d)]} ${TD_LAB(d)}</option>`).join('');
+    if(document.activeElement!==$('tdFrom')) $('tdFrom').innerHTML=opt(tdFrom);
+    if(document.activeElement!==$('tdTo')) $('tdTo').innerHTML=opt(tdTo);
+    if(!M.teams.length){ $('tdBody').innerHTML='<div class="panel"><p class="note" style="margin:0">No agents yet. Add agents in Teams &amp; rules first.</p></div>'; return; }
+    const td=(x,i)=>i===0?`<td>${esc(x)}</td>`:`<td class="n${x.lo?' lo':''}">${esc(x.t)}${x.p!=null?` <small>${x.p}%</small>`:''}</td>`;
+    $('tdBody').innerHTML=M.teams.map(T=>{ const R=tdTableRows(T);
+      return `<div class="panel"><div class="row" style="justify-content:space-between;align-items:baseline"><h2 style="margin:0">${esc(T.name)}</h2><span class="note">${T.n} agents · ${esc(M.range)}</span></div>
+      <div class="tbl" style="margin-top:10px"><table class="tdt"><thead><tr>${R.head.map((h,i)=>`<th${i?' class="n"':''}>${esc(h)}</th>`).join('')}</tr></thead>
+      <tbody>${R.body.map(r=>`<tr class="${r.we?'we':''}${r.tot?' tot':''}">${r.cells.map(td).join('')}</tr>`).join('')}</tbody></table></div>
+      ${T.yt&&T.yt.length?`<p class="note" style="margin:8px 0 0">YouTube links: ${T.yt.map(y=>`week ${y.w} ${y.done}/${T.n}`).join(', ')}</p>`:''}</div>`; }).join('');
+  }
+  const tdName=ext=>`${TD_BRAND.replace(/\s+/g,'-')}-team-daily-${(tdFrom===tdTo?TD_LAB(tdFrom):TD_LAB(tdFrom)+'-'+TD_LAB(tdTo)).replace(/\s+/g,'')}.${ext}`;
+  async function tdShare(blob,name,type,label){
+    const note=$('tdNote');
+    if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)&&navigator.canShare){ const f=new File([blob],name,{type}); if(navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:TD_BRAND+' team daily'}); note.textContent='Shared.'; return; }catch(e){ note.textContent='Share cancelled. Tap again to try again.'; return; } } }
+    const u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(u),3000); note.textContent=label+' saved: '+name;
+  }
+  function drawTeamDailyCanvas(){
+    const M=tdModel(), S=2, W=1100, P=56, ROW=34, cols=1+TD_COLS.length+2;
+    const tables=M.teams.map(T=>({T,R:tdTableRows(T)}));
+    const H=P+150+tables.reduce((h,t)=>h+70+ROW*(t.R.body.length+1)+(t.T.yt&&t.T.yt.length?34:0)+30,0)+40;
+    const cv=document.createElement('canvas'); cv.width=W*S; cv.height=H*S; const x=cv.getContext('2d'); x.scale(S,S);
+    const font=(w,z)=>x.font=`${w} ${z}px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif`;
+    x.fillStyle='#fff'; x.fillRect(0,0,W,H); x.textBaseline='alphabetic';
+    font(700,15); x.fillStyle='#1f5f8b'; x.fillText(TD_BRAND+' challenge',P,P+16);
+    font(800,44); x.fillStyle='#15181d'; x.fillText('Team daily KPIs',P,P+66);
+    font(400,20); x.fillStyle='#4b5563'; x.fillText(M.range,P,P+100);
+    const first=230, cw=(W-2*P-first)/(cols-1); let y=P+150;
+    const colX=i=>i===0?P:P+first+cw*i;
+    tables.forEach(({T,R})=>{
+      font(700,24); x.fillStyle='#15181d'; x.fillText(T.name,P,y+26); font(400,15); x.fillStyle='#6b7280'; x.textAlign='right'; x.fillText(T.n+' agents',W-P,y+26); x.textAlign='left';
+      y+=44; font(700,12); x.fillStyle='#4b5563';
+      R.head.forEach((h,i)=>{ if(i){x.textAlign='right'; x.fillText(h,colX(i),y+16);} else {x.textAlign='left'; x.fillText(h,P,y+16);} }); x.textAlign='left';
+      y+=26; x.fillStyle='#15181d'; x.fillRect(P,y-4,W-2*P,2);
+      R.body.forEach(r=>{
+        if(r.we){ x.fillStyle='#f4f5f7'; x.fillRect(P,y-2,W-2*P,ROW); }
+        if(r.tot){ x.fillStyle='#15181d'; x.fillRect(P,y-2,W-2*P,2); }
+        r.cells.forEach((c,i)=>{ const t=i===0?c:c.t;
+          font(r.tot?700:(i===0?500:400),16); x.fillStyle=r.we&&!r.tot?'#9aa0a8':(c.lo?'#b3261e':'#15181d');
+          if(i===0){ x.textAlign='left'; x.fillText(t,P+6,y+21); }
+          else { x.textAlign='right'; const pc=c.p!=null?` ${c.p}%`:''; if(pc){ font(400,12); x.fillStyle='#8a9099'; x.fillText(pc,colX(i),y+21); const pw=x.measureText(pc).width; font(r.tot?700:400,16); x.fillStyle=c.lo?'#b3261e':'#15181d'; x.fillText(t,colX(i)-pw,y+21);} else x.fillText(t,colX(i),y+21); }
+        }); x.textAlign='left';
+        y+=ROW; x.fillStyle='#e3e6eb'; x.fillRect(P,y-2,W-2*P,1);
+      });
+      if(T.yt&&T.yt.length){ font(400,15); x.fillStyle='#4b5563'; x.fillText('YouTube links: '+T.yt.map(v=>`week ${v.w} ${v.done}/${T.n}`).join(', '),P,y+22); y+=34; }
+      y+=30;
+    });
+    font(400,13); x.fillStyle='#6b7280'; x.fillText('Done / agents working that day (MC left out). Appointments out of 2 per agent. Red = under half. Weekends greyed: no attendance or reels. Bookings = marks after share.',P,H-24,W-2*P);
+    return cv;
+  }
+  async function saveTeamDailyImage(){
+    const b=$('tdImg'); b.disabled=true; b.textContent='Making image…';
+    try{ const cv=drawTeamDailyCanvas(), blob=await new Promise(r=>cv.toBlob(r,'image/png')); await tdShare(blob,tdName('png'),'image/png','Image'); }
+    catch(e){ $('tdNote').textContent='Couldn’t make the image. You can screenshot the tables instead.'; }
+    b.disabled=false; b.textContent='Save as image';
+  }
+  async function saveTeamDailyPDF(){
+    if(!window.jspdf){ alert('PDF library did not load. Check your internet and refresh the page.'); return; }
+    const M=tdModel(); if(!M.teams.length) return;
+    const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'}), W=doc.internal.pageSize.getWidth(), Mg=14;
+    M.teams.forEach((T,i)=>{ if(i) doc.addPage(); const R=tdTableRows(T);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(31,95,139); doc.text(TD_BRAND.toUpperCase()+' CHALLENGE',Mg,16);
+      doc.setFontSize(18); doc.setTextColor(20); doc.text(`${T.name.replace(/\u00b7/g,'-')} - daily KPIs`,Mg,25);
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(80); doc.text(`${M.range.replace(/\u2013/g,'-')}   |   ${T.n} agents`,Mg,32);
+      doc.autoTable({startY:37, margin:{left:Mg,right:Mg}, head:[R.head],
+        body:R.body.map(r=>r.cells.map((c,j)=>j===0?c:(c.t+(c.p!=null?`  ${c.p}%`:'')))),
+        styles:{fontSize:9,cellPadding:1.8,halign:'right'}, columnStyles:{0:{halign:'left'}}, headStyles:{fillColor:[21,24,29],halign:'right'},
+        didParseCell:c=>{ if(c.section!=='body') return; const r=R.body[c.row.index], cell=r.cells[c.column.index];
+          if(r.tot){ c.cell.styles.fontStyle='bold'; c.cell.styles.fillColor=[235,238,242]; }
+          else if(r.we){ c.cell.styles.textColor=[150,155,160]; c.cell.styles.fillColor=[246,247,249]; }
+          if(cell&&cell.lo&&!r.we) c.cell.styles.textColor=[179,38,30]; }});
+      if(T.yt&&T.yt.length){ doc.setFontSize(10); doc.setTextColor(60); doc.text('YouTube links: '+T.yt.map(v=>`week ${v.w} ${v.done}/${T.n}`).join(', '),Mg,doc.lastAutoTable.finalY+7); }
+    });
+    const n=doc.getNumberOfPages();
+    for(let i=1;i<=n;i++){ doc.setPage(i); doc.setFontSize(8); doc.setTextColor(130); const h=doc.internal.pageSize.getHeight();
+      doc.text(['Done / agents working that day (MC left out). Appointments are out of 2 per agent per day. Red = under half.','Weekends greyed: no attendance or reels on weekends. Bookings = marks after each person\'s share.'],Mg,h-11);
+      doc.text(`Page ${i} of ${n}`,W-Mg,h-8,{align:'right'}); }
+    await tdShare(doc.output('blob'),tdName('pdf'),'application/pdf','PDF');
+  }
+
   async function saveAttImage(){
     const b=$('arImg'), note=$('arImgNote'); b.disabled=true; b.textContent='Making image…';
     try{
@@ -1372,11 +1512,11 @@ body{margin:0}
     if(cur&&cur.hidden) showTab('checkin');
   }
   function render(){
-    renderId();renderDays();renderDayView();renderYT();renderSales();renderMine();renderBoard();renderReview();renderUploads();renderAttRec();renderResults();renderTeam();renderTabs();renderPoster();
+    renderId();renderDays();renderDayView();renderYT();renderSales();renderMine();renderBoard();renderReview();renderUploads();renderAttRec();renderResults();renderTeamDaily();renderTeam();renderTabs();renderPoster();
   }
 
   // ---------- events ----------
-  function showTab(tab){document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===tab));['checkin','board','team','uploads','results','attrec','review','rules','adminLogin'].forEach(t=>$(t).hidden=t!==tab); if(tab==='results') renderResults();}
+  function showTab(tab){document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===tab));['checkin','board','team','uploads','results','teamday','attrec','review','rules','adminLogin'].forEach(t=>$(t).hidden=t!==tab); if(tab==='teamday') renderTeamDaily(); if(tab==='results') renderResults();}
   document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]'); if(b){ showTab(b.dataset.tab); if(b.dataset.tab==='attrec') loadTeamAtt(true); }});
 
   $('idBox').addEventListener('change',e=>{
@@ -1494,6 +1634,12 @@ body{margin:0}
   $('rsCopy').addEventListener('click',()=>{ const ta=$('rsText'), b=$('rsCopy'); const done=()=>{b.textContent='Copied \u2713'; setTimeout(()=>b.textContent='Copy summary',2000);};
     (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(ta.value):Promise.reject()).then(done,()=>{ ta.focus(); ta.select(); try{document.execCommand('copy');done();}catch(_){ b.textContent='Select and copy the text'; } }); });
   $('arFilter').addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(!b)return;arArea=b.dataset.area;renderAttRec();});
+  $('tdFilter').addEventListener('click',e=>{const b=e.target.closest('[data-tdteam]');if(!b)return;tdTeam=b.dataset.tdteam;renderTeamDaily();});
+  $('tdFrom').addEventListener('change',e=>{tdFrom=+e.target.value; if(tdTo<tdFrom) tdTo=tdFrom; renderTeamDaily();});
+  $('tdTo').addEventListener('change',e=>{tdTo=+e.target.value; if(tdFrom>tdTo) tdFrom=tdTo; renderTeamDaily();});
+  $('tdImg').addEventListener('click',saveTeamDailyImage);
+  $('tdPdf').addEventListener('click',saveTeamDailyPDF);
+  $('tdRefresh').addEventListener('click',()=>{ const r=$('upRefresh'); if(r) r.click(); setTimeout(renderTeamDaily,1500); });
   $('arFrom').addEventListener('change',e=>{arFrom=+e.target.value; if(arTo<arFrom) arTo=arFrom; renderAttRec();});
   $('arTo').addEventListener('change',e=>{arTo=+e.target.value; if(arFrom>arTo) arFrom=arTo; renderAttRec();});
   $('arImg').addEventListener('click',saveAttImage);
